@@ -1,1 +1,0 @@
-CREATE TABLE profile_users ( profile_id UUID PRIMARY KEY, photo_url VARCHAR, first_name VARCHAR(20) NOT NULL,  last_name VARCHAR(20),  years_old DATE,  preference_lang VARCHAR(2) NOT NULL,  gender VARCHAR(10) NOT NULL,  created_at TIMESTAMP DEFAULT now(),  updated_at TIMESTAMP DEFAULT now());

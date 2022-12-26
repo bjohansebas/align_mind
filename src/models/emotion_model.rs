@@ -3,8 +3,8 @@ use crate::schema::emotions;
 
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
-use uuid::Uuid;
 use rocket::serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Queryable, Debug, Serialize, Deserialize, Identifiable, Associations, PartialEq, Eq)]
 #[diesel(belongs_to(Color, foreign_key = color_id))]

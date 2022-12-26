@@ -2,9 +2,8 @@ use crate::schema::colors;
 
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
-use uuid::Uuid;
 use rocket::serde::{Deserialize, Serialize};
-
+use uuid::Uuid;
 
 #[derive(Queryable, Debug, Serialize, Deserialize, Identifiable, PartialEq, Eq)]
 #[diesel(table_name = colors)]
@@ -21,7 +20,7 @@ pub struct Color {
 #[diesel(table_name = colors)]
 pub struct NewColor {
     pub name_color: String,
-    pub code_color: String
+    pub code_color: String,
 }
 
 #[derive(Debug, AsChangeset, Serialize, Deserialize)]

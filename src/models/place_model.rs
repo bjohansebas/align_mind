@@ -1,12 +1,11 @@
-use crate::schema::places;
-use crate::models::user_model::User;
 use crate::models::color_model::Color;
+use crate::models::user_model::User;
+use crate::schema::places;
 
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
-use uuid::Uuid;
 use rocket::serde::{Deserialize, Serialize};
-
+use uuid::Uuid;
 
 #[derive(Queryable, Debug, Serialize, Deserialize, Identifiable, Associations, PartialEq, Eq)]
 #[diesel(belongs_to(User, foreign_key = user_id))]

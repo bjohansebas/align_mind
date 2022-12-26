@@ -1,10 +1,10 @@
-use crate::schema::{think_emotions, think_trash_emotions};
-use crate::models::think_model::{TrashThink, Think};
 use crate::models::emotion_model::Emotion;
+use crate::models::think_model::{Think, TrashThink};
+use crate::schema::{think_emotions, think_trash_emotions};
 
 use diesel::prelude::*;
-use uuid::Uuid;
 use rocket::serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Queryable, Debug, Serialize, Deserialize, Identifiable, Associations, PartialEq, Eq)]
 #[diesel(belongs_to(Think, foreign_key = think_id))]

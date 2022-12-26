@@ -1,10 +1,10 @@
-use crate::schema::{profile_users,users};
+use crate::schema::{profile_users, users};
 
 use chrono::NaiveDate;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
-use uuid::Uuid;
 use rocket::serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Queryable, Debug, Serialize, Deserialize, Identifiable, PartialEq, Eq)]
 #[diesel(table_name = users)]
@@ -63,7 +63,7 @@ pub struct NewProfileUser {
     pub years_old: Option<NaiveDate>,
     pub preference_lang: String,
     pub gender: String,
-    pub user_id: Option<Uuid>
+    pub user_id: Option<Uuid>,
 }
 
 #[derive(Debug, AsChangeset, Serialize, Deserialize)]

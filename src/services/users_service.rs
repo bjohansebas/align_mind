@@ -9,7 +9,10 @@ use diesel::result::Error as DieselError;
 use regex::Regex;
 use uuid::Uuid;
 
-pub fn sign_up(mut data_profile: NewProfileUser, mut data_user: NewUser) -> (ProfileUser, User) {
+pub fn create_account(
+    mut data_profile: NewProfileUser,
+    mut data_user: NewUser,
+) -> (ProfileUser, User) {
     let mut connection: PgConnection = establish_connection();
 
     connection
@@ -81,8 +84,7 @@ pub fn update_user(uuid_user: Uuid, mut payload: UpdateUser) {
 
     let user: User = get_user(uuid_user);
 
-    let is_password: &bool = &payload.password.as_ref().unwrap().is_empty();
-    if !is_password {
+    if payload.password.is_some() {
         let password: &String = &payload.password.to_owned().unwrap();
         let hash_password: String = hash(password, DEFAULT_COST).unwrap();
 

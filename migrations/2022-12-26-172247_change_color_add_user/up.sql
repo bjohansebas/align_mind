@@ -1,0 +1,4 @@
+-- Your SQL goes here
+ALTER TABLE colors ADD COLUMN user_id UUID;
+
+ALTER TABLE colors ADD CONSTRAINT fk_user_co FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE;

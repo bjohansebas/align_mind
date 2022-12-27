@@ -15,10 +15,10 @@ use uuid::Uuid;
 pub struct Place {
     pub place_id: Uuid,
     pub name_place: String,
-    pub color_id: Uuid,
-    pub user_id: Uuid,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
+    pub color_id: Uuid,
+    pub user_id: Uuid,
 }
 
 #[derive(Insertable, Debug, Deserialize)]
@@ -26,7 +26,7 @@ pub struct Place {
 pub struct NewPlace {
     pub name_place: String,
     pub color_id: Uuid,
-    pub user_id: Uuid,
+    pub user_id: Option<Uuid>,
 }
 
 #[derive(Debug, AsChangeset, Serialize, Deserialize)]

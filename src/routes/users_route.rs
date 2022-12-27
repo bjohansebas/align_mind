@@ -1,5 +1,13 @@
-use crate::services::users_service::*;
-use align_mind_server::models::user_model::*;
+use crate::services::{
+    place_service::get_places_with_user_uuid,
+    think_service::{get_thinks_with_user_uuid, get_trash_thinks_with_user_uuid},
+    users_service::*,
+};
+use align_mind_server::models::{
+    place_model::Place,
+    think_model::{Think, TrashThink},
+    user_model::*,
+};
 
 use rocket::serde::json::Json;
 use uuid::Uuid;
@@ -14,6 +22,24 @@ pub fn getting_user(id_user: String) -> Json<User> {
 pub fn getting_profile(id_user: String) -> Json<ProfileUser> {
     let uuid_user: Uuid = Uuid::parse_str(id_user.as_str()).unwrap();
     Json(get_user_profile(uuid_user))
+}
+
+#[get("/<id_user>/places")]
+pub fn getting_places_of_user(id_user: String) -> Json<Vec<Place>> {
+    let uuid_user: Uuid = Uuid::parse_str(id_user.as_str()).unwrap();
+    Json(get_places_with_user_uuid(uuid_user))
+}
+
+#[get("/<id_user>/thinks")]
+pub fn getting_thinks_of_user(id_user: String) -> Json<Vec<Think>> {
+    let uuid_user: Uuid = Uuid::parse_str(id_user.as_str()).unwrap();
+    Json(get_thinks_with_user_uuid(uuid_user))
+}
+
+#[get("/<id_user>/trash")]
+pub fn getting_trash_of_user(id_user: String) -> Json<Vec<TrashThink>> {
+    let uuid_user: Uuid = Uuid::parse_str(id_user.as_str()).unwrap();
+    Json(get_trash_thinks_with_user_uuid(uuid_user))
 }
 
 #[post("/", data = "<payload>")]

@@ -30,6 +30,8 @@ pub struct NewThink {
     pub user_id: Uuid,
     pub place_id: Uuid,
     pub is_archive: Option<bool>,
+    pub created_at: Option<NaiveDateTime>,
+    pub updated_at: Option<NaiveDateTime>,
 }
 
 #[derive(Debug, AsChangeset, Serialize, Deserialize)]
@@ -53,6 +55,8 @@ pub struct TrashThink {
     pub place_id: Uuid,
     pub date_start: NaiveDate,
     pub date_end: NaiveDate,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }
 
 #[derive(Insertable, Debug, Deserialize)]
@@ -63,4 +67,6 @@ pub struct NewTrashThink {
     pub place_id: Uuid,
     pub date_start: Option<NaiveDate>,
     pub date_end: Option<NaiveDate>,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }

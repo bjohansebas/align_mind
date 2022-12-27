@@ -7,6 +7,7 @@ diesel::table! {
         code_color -> Varchar,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        user_id -> Nullable<Uuid>,
     }
 }
 
@@ -82,6 +83,8 @@ diesel::table! {
         place_id -> Uuid,
         date_start -> Date,
         date_end -> Date,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
     }
 }
 
@@ -97,6 +100,7 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(colors -> users (user_id));
 diesel::joinable!(emotions -> colors (color_id));
 diesel::joinable!(places -> colors (color_id));
 diesel::joinable!(places -> users (user_id));

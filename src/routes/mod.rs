@@ -1,3 +1,4 @@
+pub mod auth_route;
 pub mod color_route;
 pub mod emotion_route;
 pub mod place_route;

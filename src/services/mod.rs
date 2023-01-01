@@ -1,3 +1,4 @@
+pub mod auth_service;
 pub mod color_service;
 pub mod emotion_service;
 pub mod place_service;

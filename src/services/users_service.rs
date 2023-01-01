@@ -5,35 +5,16 @@ use align_mind_server::schema::{profile_users, users};
 use bcrypt::{hash, DEFAULT_COST};
 use chrono::Utc;
 use diesel::prelude::*;
-use diesel::result::Error as DieselError;
 use regex::Regex;
 use uuid::Uuid;
 
-pub fn create_account(
-    mut data_profile: NewProfileUser,
-    mut data_user: NewUser,
-) -> (ProfileUser, User) {
-    let mut connection: PgConnection = establish_connection();
+pub fn create_profile(user_id: Uuid, mut data_profile: NewProfileUser) -> ProfileUser {
+    let connection: &mut PgConnection = &mut establish_connection();
+    data_profile.user_id = Some(user_id);
 
-    connection
-        .transaction::<(ProfileUser, User), DieselError, _>(|conn: &mut PgConnection| {
-            let hash_password: String = hash(&data_user.password, DEFAULT_COST).unwrap();
-            data_user.password = hash_password;
-
-            let user: User = diesel::insert_into(users::table)
-                .values(&data_user)
-                .get_result(conn)
-                .unwrap();
-
-            data_profile.user_id = Some(user.user_id);
-
-            let profile_user: ProfileUser = diesel::insert_into(profile_users::table)
-                .values(&data_profile)
-                .get_result(conn)
-                .unwrap();
-
-            Ok((profile_user, user))
-        })
+    diesel::insert_into(profile_users::table)
+        .values(&data_profile)
+        .get_result(connection)
         .unwrap()
 }
 
@@ -44,6 +25,19 @@ pub fn get_user(uuid_user: Uuid) -> User {
         .filter(users::user_id.eq(uuid_user))
         .first(connection)
         .unwrap()
+}
+
+pub fn get_user_by_email(email_user: &String) -> Option<User> {
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_user = users::table
+        .filter(users::email.eq(email_user))
+        .first(connection);
+    if let Ok(user) = result_user {
+        Some(user)
+    } else {
+        None
+    }
 }
 
 pub fn get_user_profile(uuid_user: Uuid) -> ProfileUser {

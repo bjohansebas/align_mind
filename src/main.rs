@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate rocket;
 use rocket::launch;
+use routes::auth_route::*;
 use routes::color_route::*;
 use routes::emotion_route::*;
 use routes::place_route::*;
@@ -8,12 +9,14 @@ use routes::think_route::*;
 use routes::trash_route::*;
 use routes::users_route::*;
 
+mod jwt;
 mod routes;
 mod services;
 
 #[launch]
 fn rocket() -> _ {
     rocket::build()
+        .mount("/auth", routes![sign_up, login])
         .mount(
             "/users",
             routes![
@@ -22,7 +25,6 @@ fn rocket() -> _ {
                 getting_places_of_user,
                 getting_thinks_of_user,
                 getting_trash_of_user,
-                sign_up,
                 delete_account,
                 updating_user,
                 update_profile_user

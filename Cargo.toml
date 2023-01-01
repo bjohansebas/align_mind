@@ -15,3 +15,4 @@ serde_json = { version = "1.0", features = ["preserve_order"] }
 chrono = { version = "0.4.23", features = ["serde"]}
 bcrypt = "0.13"
 regex = "1.7.0"
+jsonwebtoken = "8.2.0"

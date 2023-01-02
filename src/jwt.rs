@@ -52,7 +52,7 @@ impl<'r> FromRequest<'r> for UserToken {
 
 fn private_secret() -> String {
     dotenv().ok();
-    env::var("DATABASE_URL").expect("DATABASE_URL must be set")
+    env::var("JWT_SECRET").expect("JWT_SECRET must be set")
 }
 
 pub fn generate_token(login: LoginDTO) -> String {

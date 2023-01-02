@@ -41,6 +41,6 @@ pub fn sign_in(login: LoginDTO) -> Option<LoginInfo> {
     }
 }
 
-fn verify_passwords(login_password: &String, user_password: &String) -> bool {
-    verify(login_password, user_password).unwrap()
+fn verify_passwords(login_password: &String, hash_password: &str) -> bool {
+    verify(login_password, hash_password).unwrap()
 }

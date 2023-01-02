@@ -1,154 +1,120 @@
 use super::users_service::get_user;
 use align_mind_server::establish_connection;
 use align_mind_server::models::think_model::*;
+use align_mind_server::models::user_model::User;
 use align_mind_server::schema::{thinks, trash_thinks};
 
-use chrono::{Datelike, NaiveDate, Utc};
+use chrono::{Datelike, NaiveDate, NaiveDateTime, Utc};
 use diesel::prelude::*;
+use diesel::result::Error;
 use uuid::Uuid;
 
-pub fn get_thinks_with_user_uuid(uuid_user: Uuid) -> Vec<Think> {
+pub fn get_thinks_with_user_uuid(uuid_user: Uuid) -> Option<Vec<Think>> {
     let connection: &mut PgConnection = &mut establish_connection();
 
-    let user = get_user(uuid_user);
+    let result_user: Option<User> = get_user(uuid_user);
 
-    Think::belonging_to(&user)
-        .load::<Think>(connection)
-        .expect("Error loading places")
+    if let Some(user) = result_user {
+        let result_thinks: Result<Vec<Think>, Error> =
+            Think::belonging_to(&user).load::<Think>(connection);
+        if let Ok(thinks) = result_thinks {
+            return Some(thinks);
+        }
+    }
+    None
 }
 
-pub fn get_think(uuid_think: Uuid) -> Think {
+pub fn get_think(uuid_think: Uuid) -> Option<Think> {
     let connection: &mut PgConnection = &mut establish_connection();
 
-    thinks::table
+    let result_think: Result<Think, Error> = thinks::table
         .filter(thinks::think_id.eq(uuid_think))
-        .first(connection)
-        .unwrap()
+        .first(connection);
+    if let Ok(think) = result_think {
+        return Some(think);
+    }
+    None
 }
 
 // poner ruta para ver los archivados y los desarchivados
 
-pub fn create_think(uuid_user: Uuid, mut payload: NewThink) -> Think {
+pub fn create_think(uuid_user: Uuid, mut payload: NewThink) -> bool {
     let connection: &mut PgConnection = &mut establish_connection();
 
-    payload.user_id = uuid_user;
-    payload.is_archive = Some(false);
-    payload.created_at = Some(Utc::now().naive_utc());
-    payload.updated_at = Some(Utc::now().naive_utc());
+    let result_user: Option<User> = get_user(uuid_user);
 
-    diesel::insert_into(thinks::table)
-        .values(&payload)
-        .get_result(connection)
-        .unwrap()
+    if let Some(user) = result_user {
+        payload.user_id = user.user_id;
+        payload.is_archive = Some(false);
+        payload.created_at = Some(Utc::now().naive_utc());
+        payload.updated_at = Some(Utc::now().naive_utc());
+
+        return diesel::insert_into(thinks::table)
+            .values(&payload)
+            .execute(connection)
+            .is_ok();
+    }
+    false
 }
 
-pub fn update_think(uuid_think: Uuid, mut payload: UpdateThink) {
+pub fn update_think(uuid_think: Uuid, mut payload: UpdateThink) -> bool {
     let connection: &mut PgConnection = &mut establish_connection();
 
-    let place: Think = get_think(uuid_think);
+    let result_think: Option<Think> = get_think(uuid_think);
+    if let Some(think) = result_think {
+        payload.updated_at = Some(Utc::now().naive_utc());
 
-    payload.updated_at = Some(Utc::now().naive_utc());
-
-    diesel::update(&place)
-        .set(&payload)
-        .execute(connection)
-        .unwrap();
+        return diesel::update(&think)
+            .set(&payload)
+            .execute(connection)
+            .is_ok();
+    }
+    false
 }
 
-pub fn delete_think(uuid_think: Uuid) {
+pub fn delete_think(uuid_think: Uuid) -> bool {
     let connection: &mut PgConnection = &mut establish_connection();
 
-    let place: Think = get_think(uuid_think);
+    let result_think: Option<Think> = get_think(uuid_think);
 
-    diesel::delete(&place).execute(connection).unwrap();
+    if let Some(think) = result_think {
+        return diesel::delete(&think).execute(connection).is_ok();
+    }
+    false
 }
 
-pub fn get_trash_thinks_with_user_uuid(uuid_user: Uuid) -> Vec<TrashThink> {
+pub fn move_think_to_trash(uuid_think: Uuid) -> bool {
     let connection: &mut PgConnection = &mut establish_connection();
 
-    let user = get_user(uuid_user);
+    let result_think: Option<Think> = get_think(uuid_think);
 
-    TrashThink::belonging_to(&user)
-        .load::<TrashThink>(connection)
-        .expect("Error loading places")
-}
+    if let Some(think) = result_think {
+        let date_now: NaiveDateTime = Utc::now().naive_utc();
+        let date_start: Option<NaiveDate> =
+            NaiveDate::from_ymd_opt(date_now.year(), date_now.month(), date_now.day());
+        let date_end: Option<NaiveDate> =
+            NaiveDate::from_ymd_opt(date_now.year(), date_now.month() + 1, date_now.day());
 
-pub fn get_trash_think(uuid_trash_think: Uuid) -> TrashThink {
-    let connection: &mut PgConnection = &mut establish_connection();
+        let payload: NewTrashThink = NewTrashThink {
+            text_think: think.text_think,
+            user_id: think.user_id,
+            place_id: think.place_id,
+            date_start,
+            date_end,
+            created_at: think.created_at,
+            updated_at: think.updated_at,
+        };
 
-    trash_thinks::table
-        .filter(trash_thinks::trash_th_id.eq(uuid_trash_think))
-        .first(connection)
-        .unwrap()
-}
+        let insert_trash: bool = diesel::insert_into(trash_thinks::table)
+            .values(&payload)
+            .execute(connection)
+            .is_ok();
 
-pub fn delete_trash(uuid_trash: Uuid) {
-    let connection: &mut PgConnection = &mut establish_connection();
+        if insert_trash {
+            delete_think(uuid_think);
+            return true;
+        }
+    }
 
-    let trash: TrashThink = get_trash_think(uuid_trash);
-
-    diesel::delete(&trash).execute(connection).unwrap();
-}
-
-pub fn move_think_to_trash(uuid_think: Uuid) -> TrashThink {
-    let connection: &mut PgConnection = &mut establish_connection();
-
-    let date_now = Utc::now().naive_utc();
-    let date_start = NaiveDate::from_ymd_opt(date_now.year(), date_now.month(), date_now.day());
-    let date_end = NaiveDate::from_ymd_opt(date_now.year(), date_now.month() + 1, date_now.day());
-
-    let Think {
-        text_think,
-        user_id,
-        place_id,
-        created_at,
-        updated_at,
-        ..
-    } = get_think(uuid_think);
-
-    let payload: NewTrashThink = NewTrashThink {
-        text_think,
-        user_id,
-        place_id,
-        date_start,
-        date_end,
-        created_at,
-        updated_at,
-    };
-
-    delete_think(uuid_think);
-
-    diesel::insert_into(trash_thinks::table)
-        .values(&payload)
-        .get_result(connection)
-        .unwrap()
-}
-
-pub fn remove_of_trash(uuid_trash: Uuid) -> Think {
-    let connection: &mut PgConnection = &mut establish_connection();
-
-    let TrashThink {
-        text_think,
-        user_id,
-        place_id,
-        created_at,
-        updated_at,
-        ..
-    } = get_trash_think(uuid_trash);
-
-    let payload = NewThink {
-        text_think,
-        user_id,
-        place_id,
-        created_at: Some(created_at),
-        updated_at: Some(updated_at),
-        is_archive: Some(false),
-    };
-
-    delete_trash(uuid_trash);
-
-    diesel::insert_into(thinks::table)
-        .values(&payload)
-        .get_result::<Think>(connection)
-        .unwrap()
+    false
 }

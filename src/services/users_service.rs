@@ -60,6 +60,17 @@ pub fn exist_email(email: String) -> bool {
     exist_user
 }
 
+pub fn exist_username(username: String) -> bool {
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let exist_user: bool = users::table
+        .filter(users::username.eq(&username))
+        .first::<User>(connection)
+        .is_ok();
+
+    exist_user
+}
+
 pub fn create_profile(uuid_user: Uuid, mut data_profile: NewProfileUser) -> bool {
     let connection: &mut PgConnection = &mut establish_connection();
 
@@ -90,6 +101,12 @@ pub fn update_user(uuid_user: Uuid, mut payload: UpdateUser) -> bool {
 
         if let Some(email) = &payload.email {
             if exist_email(email.to_owned()) {
+                return false;
+            }
+        }
+
+        if let Some(username) = &payload.username {
+            if exist_username(username.to_owned()) {
                 return false;
             }
         }

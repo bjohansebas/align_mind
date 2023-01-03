@@ -8,7 +8,7 @@ use diesel::prelude::*;
 
 use crate::jwt::generate_token;
 
-use super::users_service::{exist_email, get_user_by_email};
+use super::users_service::{exist_email, exist_username, get_user_by_email};
 
 pub fn create_account(mut data_user: NewUser) -> bool {
     let connection: &mut PgConnection = &mut establish_connection();
@@ -17,6 +17,10 @@ pub fn create_account(mut data_user: NewUser) -> bool {
     data_user.password = hash_password;
 
     if exist_email(data_user.email.to_owned()) {
+        return false;
+    }
+
+    if exist_username(data_user.username.to_owned()) {
         return false;
     }
 

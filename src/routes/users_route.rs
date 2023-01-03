@@ -12,260 +12,168 @@ use align_mind_server::models::response_model::Response;
 use align_mind_server::models::think_model::{Think, TrashThink};
 use align_mind_server::models::user_model::*;
 
-use rocket::http::Status;
 use rocket::response::status;
 use rocket::serde::json::Json;
-use uuid::Uuid;
+use rocket::serde::uuid::Uuid;
+use rocket_validation::Validated;
 
-#[get("/<id_user>")]
+#[get("/<uid_user>")]
 pub fn getting_user(
     token: Result<UserToken, status::Custom<Json<Response>>>,
-    id_user: String,
+    uid_user: Uuid,
 ) -> status::Custom<Json<Response>> {
     if let Err(e) = token {
         return e;
     }
 
-    let uuid_user = Uuid::parse_str(id_user.as_str());
-
-    if let Ok(uuid) = uuid_user {
-        let result_user: Option<User> = get_user(uuid);
-        response_api_entity(result_user)
-    } else {
-        status::Custom(
-            Status::from_code(Status::BadRequest.code).unwrap(),
-            Json(Response {
-                message: String::from("That is not uuid"),
-                data: serde_json::to_value("").unwrap(),
-            }),
-        )
-    }
+    let result_user: Option<User> = get_user(uid_user);
+    response_api_entity(result_user)
 }
 
-#[get("/<id_user>/profile")]
+#[get("/<uid_user>/profile")]
 pub fn getting_profile(
     token: Result<UserToken, status::Custom<Json<Response>>>,
-    id_user: String,
+    uid_user: Uuid,
 ) -> status::Custom<Json<Response>> {
     if let Err(e) = token {
         return e;
     }
 
-    let uuid_user = Uuid::parse_str(id_user.as_str());
-
-    if let Ok(uuid) = uuid_user {
-        let result_profile: Option<ProfileUser> = get_user_profile(uuid);
-        response_api_entity(result_profile)
-    } else {
-        status::Custom(
-            Status::from_code(Status::BadRequest.code).unwrap(),
-            Json(Response {
-                message: String::from("That is not uuid"),
-                data: serde_json::to_value("").unwrap(),
-            }),
-        )
-    }
+    let result_profile: Option<ProfileUser> = get_user_profile(uid_user);
+    response_api_entity(result_profile)
 }
 
-#[get("/<id_user>/places")]
+#[get("/<uid_user>/places")]
 pub fn getting_places_of_user(
     token: Result<UserToken, status::Custom<Json<Response>>>,
-    id_user: String,
+    uid_user: Uuid,
 ) -> status::Custom<Json<Response>> {
     if let Err(e) = token {
         return e;
     }
 
-    let uuid_user = Uuid::parse_str(id_user.as_str());
-
-    if let Ok(uuid) = uuid_user {
-        let result_place: Option<Vec<Place>> = get_places_with_user_uuid(uuid);
-        response_api_entity(result_place)
-    } else {
-        status::Custom(
-            Status::from_code(Status::BadRequest.code).unwrap(),
-            Json(Response {
-                message: String::from("That is not uuid"),
-                data: serde_json::to_value("").unwrap(),
-            }),
-        )
-    }
+    let result_place: Option<Vec<Place>> = get_places_with_user_uuid(uid_user);
+    response_api_entity(result_place)
 }
 
-#[get("/<id_user>/colors")]
+#[get("/<uid_user>/colors")]
 pub fn getting_colors_of_user(
     token: Result<UserToken, status::Custom<Json<Response>>>,
-    id_user: String,
+    uid_user: Uuid,
 ) -> status::Custom<Json<Response>> {
     if let Err(e) = token {
         return e;
     }
 
-    let uuid_user = Uuid::parse_str(id_user.as_str());
-
-    if let Ok(uuid) = uuid_user {
-        let result_color: Option<Vec<Color>> = get_colors_with_user_uuid(uuid);
-        response_api_entity(result_color)
-    } else {
-        status::Custom(
-            Status::from_code(Status::BadRequest.code).unwrap(),
-            Json(Response {
-                message: String::from("That is not uuid"),
-                data: serde_json::to_value("").unwrap(),
-            }),
-        )
-    }
+    let result_color: Option<Vec<Color>> = get_colors_with_user_uuid(uid_user);
+    response_api_entity(result_color)
 }
 
-#[get("/<id_user>/thinks")]
+#[get("/<uid_user>/thinks")]
 pub fn getting_thinks_of_user(
     token: Result<UserToken, status::Custom<Json<Response>>>,
-    id_user: String,
+    uid_user: Uuid,
 ) -> status::Custom<Json<Response>> {
     if let Err(e) = token {
         return e;
     }
 
-    let uuid_user = Uuid::parse_str(id_user.as_str());
-
-    if let Ok(uuid) = uuid_user {
-        let result_think: Option<Vec<Think>> = get_thinks_with_user_uuid(uuid);
-        response_api_entity(result_think)
-    } else {
-        status::Custom(
-            Status::from_code(Status::BadRequest.code).unwrap(),
-            Json(Response {
-                message: String::from("That is not uuid"),
-                data: serde_json::to_value("").unwrap(),
-            }),
-        )
-    }
+    let result_think: Option<Vec<Think>> = get_thinks_with_user_uuid(uid_user);
+    response_api_entity(result_think)
 }
 
-#[get("/<id_user>/trash")]
+#[get("/<uid_user>/trash")]
 pub fn getting_trash_of_user(
     token: Result<UserToken, status::Custom<Json<Response>>>,
-    id_user: String,
+    uid_user: Uuid,
 ) -> status::Custom<Json<Response>> {
     if let Err(e) = token {
         return e;
     }
 
-    let uuid_user = Uuid::parse_str(id_user.as_str());
-
-    if let Ok(uuid) = uuid_user {
-        let result_trash: Option<Vec<TrashThink>> = get_trash_thinks_with_user_uuid(uuid);
-        response_api_entity(result_trash)
-    } else {
-        status::Custom(
-            Status::from_code(Status::BadRequest.code).unwrap(),
-            Json(Response {
-                message: String::from("That is not uuid"),
-                data: serde_json::to_value("").unwrap(),
-            }),
-        )
-    }
+    let result_trash: Option<Vec<TrashThink>> = get_trash_thinks_with_user_uuid(uid_user);
+    response_api_entity(result_trash)
 }
 
-#[post("/<id_user>/profile", data = "<payload>")]
+#[post("/<uid_user>/profile", format = "application/json", data = "<payload>")]
 pub fn save_profile(
     token: Result<UserToken, status::Custom<Json<Response>>>,
-    id_user: String,
-    payload: Json<NewProfileUser>,
+    uid_user: Uuid,
+    payload: Validated<Json<NewProfileUserDTO>>,
 ) -> status::Custom<Json<Response>> {
     if let Err(e) = token {
         return e;
     }
-
-    let uuid_user = Uuid::parse_str(id_user.as_str());
-
-    if let Ok(uuid) = uuid_user {
-        let action = create_profile(uuid, payload.into_inner());
-        response_api_bool(action)
-    } else {
-        status::Custom(
-            Status::from_code(Status::BadRequest.code).unwrap(),
-            Json(Response {
-                message: String::from("That is not uuid"),
-                data: serde_json::to_value("").unwrap(),
-            }),
-        )
-    }
+    let data_new_profile: NewProfileUserDTO = payload.into_inner().into_inner();
+    let new_profile: NewProfileUser = NewProfileUser {
+        first_name: data_new_profile.first_name.unwrap(),
+        gender: data_new_profile.gender.unwrap(),
+        preference_lang: data_new_profile.preference_lang.unwrap(),
+        last_name: data_new_profile.last_name,
+        photo_url: data_new_profile.photo_url,
+        user_id: uid_user,
+        years_old: data_new_profile.years_old,
+    };
+    let action: bool = create_profile(uid_user, new_profile);
+    response_api_bool(action)
 }
 
-#[put("/<id_user>", data = "<payload>")]
+#[put("/<uid_user>", format = "application/json", data = "<payload>")]
 pub fn updating_user(
     token: Result<UserToken, status::Custom<Json<Response>>>,
-    id_user: String,
-    payload: Json<UpdateUser>,
+    uid_user: Uuid,
+    payload: Validated<Json<UpdateUserDTO>>,
 ) -> status::Custom<Json<Response>> {
     if let Err(e) = token {
         return e;
     }
 
-    let uuid_user = Uuid::parse_str(id_user.as_str());
-
-    if let Ok(uuid) = uuid_user {
-        let action = update_user(uuid, payload.into_inner());
-        response_api_bool(action)
-    } else {
-        status::Custom(
-            Status::from_code(Status::BadRequest.code).unwrap(),
-            Json(Response {
-                message: String::from("That is not uuid"),
-                data: serde_json::to_value("").unwrap(),
-            }),
-        )
-    }
+    let data_update: UpdateUserDTO = payload.into_inner().into_inner();
+    let data_user: UpdateUser = UpdateUser {
+        username: data_update.username,
+        email: data_update.email,
+        password: data_update.password,
+        changed_password_at: None,
+        updated_at: None,
+    };
+    let action: bool = update_user(uid_user, data_user);
+    response_api_bool(action)
 }
 
-#[put("/<id_user>/profile", data = "<payload>")]
+#[put("/<uid_user>/profile", format = "application/json", data = "<payload>")]
 pub fn update_profile_user(
     token: Result<UserToken, status::Custom<Json<Response>>>,
-    id_user: String,
-    payload: Json<UpdateProfileUser>,
+    uid_user: Uuid,
+    payload: Validated<Json<UpdateProfileUserDTO>>,
 ) -> status::Custom<Json<Response>> {
     if let Err(e) = token {
         return e;
     }
 
-    let uuid_user = Uuid::parse_str(id_user.as_str());
+    let data_update: UpdateProfileUserDTO = payload.into_inner().into_inner();
+    let data_profile: UpdateProfileUser = UpdateProfileUser {
+        first_name: data_update.first_name,
+        gender: data_update.gender,
+        last_name: data_update.last_name,
+        photo_url: data_update.photo_url,
+        preference_lang: data_update.preference_lang,
+        updated_at: None,
+        years_old: data_update.years_old,
+    };
 
-    if let Ok(uuid) = uuid_user {
-        let action = update_profile(uuid, payload.into_inner());
-        response_api_bool(action)
-    } else {
-        status::Custom(
-            Status::from_code(Status::BadRequest.code).unwrap(),
-            Json(Response {
-                message: String::from("That is not uuid"),
-                data: serde_json::to_value("").unwrap(),
-            }),
-        )
-    }
+    let action: bool = update_profile(uid_user, data_profile);
+    response_api_bool(action)
 }
 
-#[delete("/<id_user>")]
+#[delete("/<uid_user>")]
 pub fn delete_account(
     token: Result<UserToken, status::Custom<Json<Response>>>,
-    id_user: String,
+    uid_user: Uuid,
 ) -> status::Custom<Json<Response>> {
     if let Err(e) = token {
         return e;
     }
 
-    let uuid_user = Uuid::parse_str(id_user.as_str());
-
-    if let Ok(uuid) = uuid_user {
-        let action = delete_user_with_profile(uuid);
-        response_api_bool(action)
-    } else {
-        status::Custom(
-            Status::from_code(Status::BadRequest.code).unwrap(),
-            Json(Response {
-                message: String::from("That is not uuid"),
-                data: serde_json::to_value("").unwrap(),
-            }),
-        )
-    }
+    let action: bool = delete_user_with_profile(uid_user);
+    response_api_bool(action)
 }

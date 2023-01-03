@@ -1,4 +1,4 @@
-use align_mind_server::models::auth_model::LoginDTO;
+use align_mind_server::models::auth_model::Login;
 use align_mind_server::models::response_model::Response;
 
 use chrono::Utc;
@@ -55,7 +55,7 @@ fn private_secret() -> String {
     env::var("JWT_SECRET").expect("JWT_SECRET must be set")
 }
 
-pub fn generate_token(login: LoginDTO) -> String {
+pub fn generate_token(login: Login) -> String {
     let now = Utc::now().timestamp_nanos() / 1_000_000_000;
     let payload = UserToken {
         iat: now,
@@ -63,7 +63,7 @@ pub fn generate_token(login: LoginDTO) -> String {
         sub: login.email,
     };
 
-    let key = private_secret();
+    let key: String = private_secret();
     jsonwebtoken::encode(
         &Header::default(),
         &payload,
@@ -73,7 +73,7 @@ pub fn generate_token(login: LoginDTO) -> String {
 }
 
 pub fn decode_token(token: String) -> Result<TokenData<UserToken>> {
-    let key = private_secret();
+    let key: String = private_secret();
     jsonwebtoken::decode::<UserToken>(
         &token,
         &DecodingKey::from_secret(key.as_bytes()),

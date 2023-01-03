@@ -62,4 +62,5 @@ fn rocket() -> _ {
                 updating_emotion
             ],
         )
+        .register("/", catchers![rocket_validation::validation_catcher])
 }

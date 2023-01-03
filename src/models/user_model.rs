@@ -4,6 +4,7 @@ use chrono::NaiveDate;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use rocket::serde::{Deserialize, Serialize};
+use rocket_validation::Validate;
 use uuid::Uuid;
 
 #[derive(Queryable, Debug, Serialize, Deserialize, Identifiable, PartialEq, Eq)]
@@ -19,7 +20,7 @@ pub struct User {
     pub updated_at: NaiveDateTime,
 }
 
-#[derive(Insertable, Debug, Deserialize)]
+#[derive(Insertable, Debug, Serialize, Deserialize, Validate)]
 #[diesel(table_name = users)]
 pub struct NewUser {
     pub username: String,
@@ -27,7 +28,17 @@ pub struct NewUser {
     pub email: String,
 }
 
-#[derive(AsChangeset, Deserialize, Serialize)]
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct NewUserDTO {
+    #[validate(length(min = 5, max = 20), required)]
+    pub username: Option<String>,
+    #[validate(length(min = 8, max = 50), required)]
+    pub password: Option<String>,
+    #[validate(email, required)]
+    pub email: Option<String>,
+}
+
+#[derive(Debug, AsChangeset, Deserialize, Serialize)]
 #[diesel(table_name = users)]
 pub struct UpdateUser {
     pub username: Option<String>,
@@ -35,6 +46,16 @@ pub struct UpdateUser {
     pub email: Option<String>,
     pub updated_at: Option<NaiveDateTime>,
     pub changed_password_at: Option<NaiveDateTime>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct UpdateUserDTO {
+    #[validate(length(min = 5))]
+    pub username: Option<String>,
+    #[validate(length(min = 8))]
+    pub password: Option<String>,
+    #[validate(email)]
+    pub email: Option<String>,
 }
 
 #[derive(Queryable, Debug, Serialize, Deserialize, Identifiable, Associations, PartialEq, Eq)]
@@ -63,7 +84,22 @@ pub struct NewProfileUser {
     pub years_old: Option<NaiveDate>,
     pub preference_lang: String,
     pub gender: String,
-    pub user_id: Option<Uuid>,
+    pub user_id: Uuid,
+}
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct NewProfileUserDTO {
+    #[validate(url)]
+    pub photo_url: Option<String>,
+    #[validate(length(min = 5, max = 20), required)]
+    pub first_name: Option<String>,
+    #[validate(length(min = 5, max = 20))]
+    pub last_name: Option<String>,
+    pub years_old: Option<NaiveDate>,
+    #[validate(length(min = 1, max = 2), required)]
+    pub preference_lang: Option<String>,
+    #[validate(length(min = 1, max = 10))]
+    pub gender: Option<String>,
 }
 
 #[derive(Debug, AsChangeset, Serialize, Deserialize)]
@@ -76,4 +112,19 @@ pub struct UpdateProfileUser {
     pub preference_lang: Option<String>,
     pub gender: Option<String>,
     pub updated_at: Option<NaiveDateTime>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct UpdateProfileUserDTO {
+    #[validate(url)]
+    pub photo_url: Option<String>,
+    #[validate(length(min = 5, max = 20), required)]
+    pub first_name: Option<String>,
+    #[validate(length(min = 5, max = 20))]
+    pub last_name: Option<String>,
+    pub years_old: Option<NaiveDate>,
+    #[validate(length(min = 1, max = 2), required)]
+    pub preference_lang: Option<String>,
+    #[validate(length(min = 1, max = 10))]
+    pub gender: Option<String>,
 }

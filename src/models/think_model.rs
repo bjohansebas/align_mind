@@ -6,6 +6,7 @@ use chrono::NaiveDate;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use rocket::serde::{Deserialize, Serialize};
+use rocket_validation::Validate;
 use uuid::Uuid;
 
 #[derive(Queryable, Debug, Serialize, Deserialize, Identifiable, Associations, PartialEq, Eq)]
@@ -34,13 +35,27 @@ pub struct NewThink {
     pub updated_at: Option<NaiveDateTime>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct NewThinkDTO {
+    #[validate(length(min = 5), required)]
+    pub text_think: Option<String>,
+    #[validate(length(equal = 36), required)]
+    pub place_id: Option<String>,
+}
+
 #[derive(Debug, AsChangeset, Serialize, Deserialize)]
 #[diesel(table_name = thinks)]
 pub struct UpdateThink {
-    pub text_think: String,
-    pub place_id: Uuid,
+    pub text_think: Option<String>,
     pub is_archive: Option<bool>,
     pub updated_at: Option<NaiveDateTime>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct UpdateThinkDTO {
+    #[validate(length(min = 5))]
+    pub text_think: Option<String>,
+    pub is_archive: Option<bool>,
 }
 
 #[derive(Queryable, Debug, Serialize, Deserialize, Identifiable, Associations, PartialEq, Eq)]

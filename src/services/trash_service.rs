@@ -27,7 +27,7 @@ pub fn get_trash_think(uuid_trash_think: Uuid) -> Option<TrashThink> {
 
     let result_trash_think: Result<TrashThink, Error> = trash_thinks::table
         .filter(trash_thinks::trash_th_id.eq(uuid_trash_think))
-        .first(connection);
+        .first::<TrashThink>(connection);
 
     if let Ok(trash) = result_trash_think {
         return Some(trash);

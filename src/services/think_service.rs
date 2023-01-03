@@ -1,5 +1,7 @@
+use super::place_service::get_place;
 use super::users_service::get_user;
 use align_mind_server::establish_connection;
+use align_mind_server::models::place_model::Place;
 use align_mind_server::models::think_model::*;
 use align_mind_server::models::user_model::User;
 use align_mind_server::schema::{thinks, trash_thinks};
@@ -29,7 +31,7 @@ pub fn get_think(uuid_think: Uuid) -> Option<Think> {
 
     let result_think: Result<Think, Error> = thinks::table
         .filter(thinks::think_id.eq(uuid_think))
-        .first(connection);
+        .first::<Think>(connection);
     if let Ok(think) = result_think {
         return Some(think);
     }
@@ -38,34 +40,53 @@ pub fn get_think(uuid_think: Uuid) -> Option<Think> {
 
 // poner ruta para ver los archivados y los desarchivados
 
-pub fn create_think(uuid_user: Uuid, mut payload: NewThink) -> bool {
+pub fn create_think(uuid_user: Uuid, payload: NewThinkDTO) -> bool {
     let connection: &mut PgConnection = &mut establish_connection();
 
     let result_user: Option<User> = get_user(uuid_user);
 
     if let Some(user) = result_user {
-        payload.user_id = user.user_id;
-        payload.is_archive = Some(false);
-        payload.created_at = Some(Utc::now().naive_utc());
-        payload.updated_at = Some(Utc::now().naive_utc());
+        let uuid_place: Result<Uuid, uuid::Error> =
+            Uuid::parse_str(payload.place_id.unwrap().as_str());
 
-        return diesel::insert_into(thinks::table)
-            .values(&payload)
-            .execute(connection)
-            .is_ok();
+        if let Ok(uuid) = uuid_place {
+            let result_place: Option<Place> = get_place(uuid);
+            
+            if let Some(place) = result_place {
+                if place.user_id.eq(&user.user_id) {
+                    let think: NewThink = NewThink {
+                        user_id: user.user_id,
+                        is_archive: Some(false),
+                        place_id: place.place_id,
+                        text_think: payload.text_think.unwrap(),
+                        created_at: Some(Utc::now().naive_utc()),
+                        updated_at: Some(Utc::now().naive_utc()),
+                    };
+
+                    return diesel::insert_into(thinks::table)
+                        .values(&think)
+                        .execute(connection)
+                        .is_ok();
+                }
+            }
+        }
     }
     false
 }
 
-pub fn update_think(uuid_think: Uuid, mut payload: UpdateThink) -> bool {
+pub fn update_think(uuid_think: Uuid, payload: UpdateThinkDTO) -> bool {
     let connection: &mut PgConnection = &mut establish_connection();
 
     let result_think: Option<Think> = get_think(uuid_think);
     if let Some(think) = result_think {
-        payload.updated_at = Some(Utc::now().naive_utc());
+        let data_think: UpdateThink = UpdateThink {
+            text_think: payload.text_think,
+            is_archive: payload.is_archive,
+            updated_at: Some(Utc::now().naive_utc()),
+        };
 
         return diesel::update(&think)
-            .set(&payload)
+            .set(&data_think)
             .execute(connection)
             .is_ok();
     }

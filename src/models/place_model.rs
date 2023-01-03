@@ -5,6 +5,7 @@ use crate::schema::places;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use rocket::serde::{Deserialize, Serialize};
+use rocket_validation::Validate;
 use uuid::Uuid;
 
 #[derive(Queryable, Debug, Serialize, Deserialize, Identifiable, Associations, PartialEq, Eq)]
@@ -26,7 +27,15 @@ pub struct Place {
 pub struct NewPlace {
     pub name_place: String,
     pub color_id: Uuid,
-    pub user_id: Option<Uuid>,
+    pub user_id: Uuid,
+}
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct NewPlaceDTO {
+    #[validate(length(min = 5), required)]
+    pub name_place: Option<String>,
+    #[validate(length(equal = 36), required)]
+    pub color_id: Option<String>,
 }
 
 #[derive(Debug, AsChangeset, Serialize, Deserialize)]
@@ -34,6 +43,13 @@ pub struct NewPlace {
 pub struct UpdatePlace {
     pub name_place: Option<String>,
     pub color_id: Option<Uuid>,
-    pub user_id: Option<Uuid>,
     pub updated_at: Option<NaiveDateTime>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct UpdatePlaceDTO {
+    #[validate(length(min = 5))]
+    pub name_place: Option<String>,
+    #[validate(length(equal = 36))]
+    pub color_id: Option<String>,
 }

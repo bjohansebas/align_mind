@@ -5,102 +5,60 @@ use crate::{
 };
 use align_mind_server::models::{emotion_model::*, response_model::Response};
 
-use rocket::{http::Status, response::status, serde::json::Json};
-use uuid::Uuid;
+use rocket::response::status;
+use rocket::serde::json::Json;
+use rocket::serde::uuid::Uuid;
+use rocket_validation::Validated;
 
-#[get("/<id_emotion>")]
+#[get("/<uid_emotion>")]
 pub fn getting_emotion(
     token: Result<UserToken, status::Custom<Json<Response>>>,
-    id_emotion: String,
+    uid_emotion: Uuid,
 ) -> status::Custom<Json<Response>> {
     if let Err(e) = token {
         return e;
     }
 
-    let uuid_emotion = Uuid::parse_str(id_emotion.as_str());
-    if let Ok(uuid) = uuid_emotion {
-        let result_emotion: Option<Emotion> = get_emotion(uuid);
-        response_api_entity(result_emotion)
-    } else {
-        status::Custom(
-            Status::from_code(Status::BadRequest.code).unwrap(),
-            Json(Response {
-                message: String::from("That is not uuid"),
-                data: serde_json::to_value("").unwrap(),
-            }),
-        )
-    }
+    let result_emotion: Option<Emotion> = get_emotion(uid_emotion);
+    response_api_entity(result_emotion)
 }
 
-#[post("/", data = "<payload>")]
+#[post("/", format = "application/json", data = "<payload>")]
 pub fn save_emotion(
     token: Result<UserToken, status::Custom<Json<Response>>>,
-    payload: Json<NewEmotion>,
+    payload: Validated<Json<NewEmotionDTO>>,
 ) -> status::Custom<Json<Response>> {
     if let Err(e) = token {
         return e;
     }
 
-    let result_action: bool = create_emotion(payload.into_inner());
-
-    if result_action {
-        response_api_bool(result_action)
-    } else {
-        status::Custom(
-            Status::from_code(Status::BadRequest.code).unwrap(),
-            Json(Response {
-                message: String::from("That is not uuid"),
-                data: serde_json::to_value("").unwrap(),
-            }),
-        )
-    }
+    let result_action: bool = create_emotion(payload.into_inner().into_inner());
+    response_api_bool(result_action)
 }
 
-#[put("/<id_emotion>", data = "<payload>")]
+#[put("/<uid_emotion>", format = "application/json", data = "<payload>")]
 pub fn updating_emotion(
     token: Result<UserToken, status::Custom<Json<Response>>>,
-    id_emotion: String,
-    payload: Json<UpdateEmotion>,
+    uid_emotion: Uuid,
+    payload: Validated<Json<UpdateEmotionDTO>>,
 ) -> status::Custom<Json<Response>> {
     if let Err(e) = token {
         return e;
     }
 
-    let uuid_emotion = Uuid::parse_str(id_emotion.as_str());
-    if let Ok(uuid) = uuid_emotion {
-        let result_action: bool = update_emotion(uuid, payload.into_inner());
-        response_api_bool(result_action)
-    } else {
-        status::Custom(
-            Status::from_code(Status::BadRequest.code).unwrap(),
-            Json(Response {
-                message: String::from("That is not uuid"),
-                data: serde_json::to_value("").unwrap(),
-            }),
-        )
-    }
+    let result_action: bool = update_emotion(uid_emotion, payload.into_inner().into_inner());
+    response_api_bool(result_action)
 }
 
-#[delete("/<id_emotion>")]
+#[delete("/<uid_emotion>")]
 pub fn deleting_emotion(
     token: Result<UserToken, status::Custom<Json<Response>>>,
-    id_emotion: String,
+    uid_emotion: Uuid,
 ) -> status::Custom<Json<Response>> {
     if let Err(e) = token {
         return e;
     }
 
-    let uuid_emotion = Uuid::parse_str(id_emotion.as_str());
-    if let Ok(uuid) = uuid_emotion {
-        let result_action = delete_emotion(uuid);
-        response_api_bool(result_action)
-    } else {
-        status::Custom(
-            Status::from_code(Status::BadRequest.code).unwrap(),
-            Json(Response {
-                message: String::from("That is not uuid"),
-                data: serde_json::to_value("").unwrap(),
-            }),
-        )
-    }
+    let result_action: bool = delete_emotion(uid_emotion);
+    response_api_bool(result_action)
 }

@@ -4,6 +4,7 @@ use crate::schema::colors;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use rocket::serde::{Deserialize, Serialize};
+use rocket_validation::Validate;
 use uuid::Uuid;
 
 #[derive(Queryable, Debug, Serialize, Deserialize, Identifiable, Associations, PartialEq, Eq)]
@@ -24,7 +25,15 @@ pub struct Color {
 pub struct NewColor {
     pub name_color: String,
     pub code_color: String,
-    pub user_id: Option<Uuid>,
+    pub user_id: Uuid,
+}
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct NewColorDTO {
+    #[validate(length(min = 5, max = 30), required)]
+    pub name_color: Option<String>,
+    #[validate(length(equal = 6), required)]
+    pub code_color: Option<String>,
 }
 
 #[derive(Debug, AsChangeset, Serialize, Deserialize)]
@@ -33,4 +42,12 @@ pub struct UpdateColor {
     pub name_color: Option<String>,
     pub code_color: Option<String>,
     pub updated_at: Option<NaiveDateTime>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct UpdateColorDTO {
+    #[validate(length(min = 5, max = 30))]
+    pub name_color: Option<String>,
+    #[validate(length(equal = 6))]
+    pub code_color: Option<String>,
 }

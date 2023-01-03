@@ -4,6 +4,7 @@ use crate::schema::emotions;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use rocket::serde::{Deserialize, Serialize};
+use rocket_validation::Validate;
 use uuid::Uuid;
 
 #[derive(Queryable, Debug, Serialize, Deserialize, Identifiable, Associations, PartialEq, Eq)]
@@ -25,10 +26,26 @@ pub struct NewEmotion {
     pub color_id: Uuid,
 }
 
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct NewEmotionDTO {
+    #[validate(length(min = 5, max = 20), required)]
+    pub name_emotion: Option<String>,
+    #[validate(length(equal = 36), required)]
+    pub color_id: Option<String>,
+}
+
 #[derive(Debug, AsChangeset, Serialize, Deserialize)]
 #[diesel(table_name = emotions)]
 pub struct UpdateEmotion {
     pub name_emotion: Option<String>,
     pub color_id: Option<Uuid>,
     pub updated_at: Option<NaiveDateTime>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct UpdateEmotionDTO {
+    #[validate(length(min = 5, max = 20))]
+    pub name_emotion: Option<String>,
+    #[validate(length(equal = 36))]
+    pub color_id: Option<String>,
 }

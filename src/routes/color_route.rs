@@ -1,108 +1,64 @@
-use crate::{
-    jwt::UserToken,
-    services::color_service::*,
-    utils::responde_request::{response_api_bool, response_api_entity},
-};
-use align_mind_server::models::{color_model::*, response_model::Response};
+use crate::jwt::UserToken;
+use crate::services::color_service::*;
+use crate::utils::responde_request::{response_api_bool, response_api_entity};
+use align_mind_server::models::color_model::*;
+use align_mind_server::models::response_model::Response;
 
-use rocket::{http::Status, response::status, serde::json::Json};
-use uuid::Uuid;
+use rocket::response::status;
+use rocket::serde::json::Json;
+use rocket::serde::uuid::Uuid;
+use rocket_validation::Validated;
 
-#[get("/<id_color>")]
+#[get("/<uid_color>")]
 pub fn getting_color(
     token: Result<UserToken, status::Custom<Json<Response>>>,
-    id_color: String,
+    uid_color: Uuid,
 ) -> status::Custom<Json<Response>> {
     if let Err(e) = token {
         return e;
     }
 
-    let uuid_color = Uuid::parse_str(id_color.as_str());
-    if let Ok(uuid) = uuid_color {
-        let result_color = get_color(uuid);
-        response_api_entity(result_color)
-    } else {
-        status::Custom(
-            Status::from_code(Status::BadRequest.code).unwrap(),
-            Json(Response {
-                message: String::from("That is not uuid"),
-                data: serde_json::to_value("").unwrap(),
-            }),
-        )
-    }
+    let result_color: Option<Color> = get_color(uid_color);
+    response_api_entity(result_color)
 }
 
-#[post("/<id_user>", data = "<payload>")]
+#[post("/<uid_user>", format = "application/json", data = "<payload>")]
 pub fn save_color(
     token: Result<UserToken, status::Custom<Json<Response>>>,
-    id_user: String,
-    payload: Json<NewColor>,
+    uid_user: Uuid,
+    payload: Validated<Json<NewColorDTO>>,
 ) -> status::Custom<Json<Response>> {
     if let Err(e) = token {
         return e;
     }
 
-    let uuid_user = Uuid::parse_str(id_user.as_str());
-
-    if let Ok(uuid) = uuid_user {
-        let result_action = create_color(Some(uuid), payload.into_inner());
-        response_api_bool(result_action)
-    } else {
-        status::Custom(
-            Status::from_code(Status::BadRequest.code).unwrap(),
-            Json(Response {
-                message: String::from("That is not uuid"),
-                data: serde_json::to_value("").unwrap(),
-            }),
-        )
-    }
+    let result_action: bool = create_color(uid_user, payload.into_inner().into_inner());
+    response_api_bool(result_action)
 }
 
-#[put("/<id_color>", data = "<payload>")]
+#[put("/<uid_color>", format = "application/json", data = "<payload>")]
 pub fn updating_color(
     token: Result<UserToken, status::Custom<Json<Response>>>,
-    id_color: String,
-    payload: Json<UpdateColor>,
+    uid_color: Uuid,
+    payload: Validated<Json<UpdateColorDTO>>,
 ) -> status::Custom<Json<Response>> {
     if let Err(e) = token {
         return e;
     }
 
-    let uuid_color = Uuid::parse_str(id_color.as_str());
-    if let Ok(uuid) = uuid_color {
-        let result_action = update_color(uuid, payload.into_inner());
-        response_api_bool(result_action)
-    } else {
-        status::Custom(
-            Status::from_code(Status::BadRequest.code).unwrap(),
-            Json(Response {
-                message: String::from("That is not uuid"),
-                data: serde_json::to_value("").unwrap(),
-            }),
-        )
-    }
+    let result_action: bool = update_color(uid_color, payload.into_inner().into_inner());
+    response_api_bool(result_action)
 }
 
-#[delete("/<id_color>")]
+#[delete("/<uid_color>")]
 pub fn deleting_color(
     token: Result<UserToken, status::Custom<Json<Response>>>,
-    id_color: String,
+    uid_color: Uuid,
 ) -> status::Custom<Json<Response>> {
     if let Err(e) = token {
         return e;
     }
 
-    let uuid_color = Uuid::parse_str(id_color.as_str());
-    if let Ok(uuid) = uuid_color {
-        let result_action = delete_color(uuid);
-        response_api_bool(result_action)
-    } else {
-        status::Custom(
-            Status::from_code(Status::BadRequest.code).unwrap(),
-            Json(Response {
-                message: String::from("That is not uuid"),
-                data: serde_json::to_value("").unwrap(),
-            }),
-        )
-    }
+    let result_action: bool = delete_color(uid_color);
+    response_api_bool(result_action)
 }

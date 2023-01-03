@@ -15,7 +15,7 @@ pub fn get_color(uuid_color: Uuid) -> Option<Color> {
 
     let result_color: Result<Color, Error> = colors::table
         .filter(colors::color_id.eq(uuid_color))
-        .first(connection);
+        .first::<Color>(connection);
 
     if let Ok(color) = result_color {
         return Some(color);
@@ -29,7 +29,7 @@ pub fn get_colors_with_user_uuid(uuid_user: Uuid) -> Option<Vec<Color>> {
     let result_user: Option<User> = get_user(uuid_user);
 
     if let Some(user) = result_user {
-        let result_colors: Result<Vec<Color>, _> =
+        let result_colors: Result<Vec<Color>, Error> =
             Color::belonging_to(&user).load::<Color>(connection);
         if let Ok(colors) = result_colors {
             return Some(colors);
@@ -38,39 +38,39 @@ pub fn get_colors_with_user_uuid(uuid_user: Uuid) -> Option<Vec<Color>> {
     None
 }
 
-pub fn create_color(user_uuid: Option<Uuid>, mut payload: NewColor) -> bool {
+pub fn create_color(user_uuid: Uuid, payload: NewColorDTO) -> bool {
     let connection: &mut PgConnection = &mut establish_connection();
 
-    if let Some(uuid) = user_uuid {
-        let result_user: Option<User> = get_user(uuid);
-        if let Some(user) = result_user {
-            payload.user_id = Some(user.user_id);
-            diesel::insert_into(colors::table)
-                .values(&payload)
-                .execute(connection)
-                .is_ok()
-        } else {
-            false
-        }
-    } else {
-        payload.user_id = None;
-        diesel::insert_into(colors::table)
-            .values(&payload)
+    let result_user: Option<User> = get_user(user_uuid);
+    if let Some(user) = result_user {
+        let color: NewColor = NewColor {
+            user_id: user.user_id,
+            code_color: payload.code_color.unwrap(),
+            name_color: payload.name_color.unwrap(),
+        };
+
+        return diesel::insert_into(colors::table)
+            .values(&color)
             .execute(connection)
-            .is_ok()
+            .is_ok();
     }
+    false
 }
 
-pub fn update_color(uuid_color: Uuid, mut payload: UpdateColor) -> bool {
+pub fn update_color(uuid_color: Uuid, payload: UpdateColorDTO) -> bool {
     let connection: &mut PgConnection = &mut establish_connection();
 
     let result_color: Option<Color> = get_color(uuid_color);
 
     if let Some(color) = result_color {
-        payload.updated_at = Some(Utc::now().naive_utc());
+        let data_color: UpdateColor = UpdateColor {
+            code_color: payload.code_color,
+            name_color: payload.name_color,
+            updated_at: Some(Utc::now().naive_utc()),
+        };
 
         return diesel::update(&color)
-            .set(&payload)
+            .set(&data_color)
             .execute(connection)
             .is_ok();
     }

@@ -11,7 +11,7 @@ pub struct Login {
 pub struct LoginDTO {
     #[validate(email, required)]
     pub email: Option<String>,
-    #[validate(length(min = 8, max = 50), required)]
+    #[validate(length(min = 8, max = 30), required)]
     pub password: Option<String>,
 }
 

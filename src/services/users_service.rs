@@ -1,10 +1,12 @@
 use align_mind_server::establish_connection;
+use align_mind_server::models::response_model::ResponseError;
 use align_mind_server::models::user_model::*;
 use align_mind_server::schema::{profile_users, users};
 
 use bcrypt::{hash, DEFAULT_COST};
 use chrono::Utc;
 use diesel::prelude::*;
+use rocket::http::Status;
 use uuid::Uuid;
 
 pub fn get_user(uuid_user: Uuid) -> Option<User> {
@@ -20,17 +22,16 @@ pub fn get_user(uuid_user: Uuid) -> Option<User> {
     None
 }
 
-pub fn get_user_by_email(email_user: &String) -> Option<User> {
-    let connection: &mut PgConnection = &mut establish_connection();
-
-    let result_user: Result<User, diesel::result::Error> = users::table
+pub fn get_user_by_email(email_user: &String, conn: &mut PgConnection) -> Result<User, ResponseError> {
+    let result_user = users::table
         .filter(users::email.eq(email_user))
-        .first::<User>(connection);
-
-    if let Ok(user) = result_user {
-        return Some(user);
-    }
-    None
+        .first::<User>(conn)
+        .map(|user| user)
+        .map_err(|_| ResponseError {
+            code: Status::NotFound.code,
+            message: "The email was not register".to_string()
+        });
+    result_user
 }
 
 pub fn get_user_profile(uuid_user: Uuid) -> Option<ProfileUser> {
@@ -66,6 +67,25 @@ pub fn exist_username(username: String) -> bool {
     let exist_user: bool = users::table
         .filter(users::username.eq(&username))
         .first::<User>(connection)
+        .is_ok();
+
+    exist_user
+}
+
+pub fn exist_email_with_db(email: String, conn: &mut PgConnection) -> bool {
+
+    let exist_user: bool = users::table
+        .filter(users::email.eq(&email))
+        .first::<User>(conn)
+        .is_ok();
+
+    exist_user
+}
+
+pub fn exist_username_with_db(username: String, conn: &mut PgConnection) -> bool {
+    let exist_user: bool = users::table
+        .filter(users::username.eq(&username))
+        .first::<User>(conn)
         .is_ok();
 
     exist_user

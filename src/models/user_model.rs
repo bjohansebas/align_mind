@@ -13,7 +13,9 @@ use uuid::Uuid;
 pub struct User {
     pub user_id: Uuid,
     pub username: String,
+    #[serde(skip)]
     pub password: String,
+    #[serde(skip)]
     pub changed_password_at: NaiveDateTime,
     pub email: String,
     pub created_at: NaiveDateTime,
@@ -32,7 +34,7 @@ pub struct NewUser {
 pub struct NewUserDTO {
     #[validate(length(min = 5, max = 20), required)]
     pub username: Option<String>,
-    #[validate(length(min = 8, max = 50), required)]
+    #[validate(length(min = 8, max = 30), required)]
     pub password: Option<String>,
     #[validate(email, required)]
     pub email: Option<String>,
@@ -50,9 +52,9 @@ pub struct UpdateUser {
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct UpdateUserDTO {
-    #[validate(length(min = 5))]
+    #[validate(length(min = 5, max = 20))]
     pub username: Option<String>,
-    #[validate(length(min = 8))]
+    #[validate(length(min = 8, max = 30))]
     pub password: Option<String>,
     #[validate(email)]
     pub email: Option<String>,
@@ -64,9 +66,12 @@ pub struct UpdateUserDTO {
 #[diesel(primary_key(profile_id))]
 pub struct ProfileUser {
     pub profile_id: Uuid,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub photo_url: Option<String>,
     pub first_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub last_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub years_old: Option<NaiveDate>,
     pub preference_lang: String,
     pub gender: String,
@@ -98,7 +103,7 @@ pub struct NewProfileUserDTO {
     pub years_old: Option<NaiveDate>,
     #[validate(length(min = 1, max = 2), required)]
     pub preference_lang: Option<String>,
-    #[validate(length(min = 1, max = 10))]
+    #[validate(length(min = 1, max = 10), required)]
     pub gender: Option<String>,
 }
 

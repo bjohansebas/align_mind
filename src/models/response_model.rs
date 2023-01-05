@@ -13,7 +13,7 @@ pub struct ResponseSuccess {
     pub data: Value,
 }
 
-#[derive(Debug,Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ResponseError {
     pub code: u16,
     pub message: String,

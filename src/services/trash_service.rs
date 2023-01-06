@@ -1,25 +1,32 @@
 use super::users_service::get_user;
 use align_mind_server::establish_connection;
+use align_mind_server::models::response_model::ResponseError;
 use align_mind_server::models::think_model::*;
 use align_mind_server::models::user_model::User;
 use align_mind_server::schema::{thinks, trash_thinks};
 
 use diesel::prelude::*;
 use diesel::result::Error;
+use rocket::http::Status;
 use uuid::Uuid;
 
-pub fn get_trash_thinks_with_user_uuid(uuid_user: Uuid) -> Option<Vec<TrashThink>> {
-    let connection: &mut PgConnection = &mut establish_connection();
+pub fn get_trash_thinks_with_user_uuid(
+    uuid_user: Uuid,
+    conn: &mut PgConnection,
+) -> Result<Vec<TrashThink>, ResponseError> {
+    let result_user: User = get_user(uuid_user, conn)?;
 
-    let result_user: Option<User> = get_user(uuid_user);
-    if let Some(user) = result_user {
-        let result_thinks: Result<Vec<TrashThink>, Error> =
-            TrashThink::belonging_to(&user).load::<TrashThink>(connection);
-        if let Ok(thinks) = result_thinks {
-            return Some(thinks);
-        }
+    let result_thinks: Result<Vec<TrashThink>, Error> =
+        TrashThink::belonging_to(&result_user).load::<TrashThink>(conn);
+
+    if result_thinks.is_err() {
+        return Err(ResponseError {
+            code: Status::BadRequest.code,
+            message: "Unknown error".to_string(),
+        });
     }
-    None
+
+    Ok(result_thinks.unwrap())
 }
 
 pub fn get_trash_think(uuid_trash_think: Uuid) -> Option<TrashThink> {

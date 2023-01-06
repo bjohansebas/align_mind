@@ -123,12 +123,12 @@ pub struct UpdateProfileUser {
 pub struct UpdateProfileUserDTO {
     #[validate(url)]
     pub photo_url: Option<String>,
-    #[validate(length(min = 5, max = 20), required)]
+    #[validate(length(min = 5, max = 20))]
     pub first_name: Option<String>,
     #[validate(length(min = 5, max = 20))]
     pub last_name: Option<String>,
     pub years_old: Option<NaiveDate>,
-    #[validate(length(min = 1, max = 2), required)]
+    #[validate(length(min = 1, max = 2))]
     pub preference_lang: Option<String>,
     #[validate(length(min = 1, max = 10))]
     pub gender: Option<String>,

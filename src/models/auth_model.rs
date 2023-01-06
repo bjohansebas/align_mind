@@ -17,6 +17,7 @@ pub struct LoginDTO {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LoginInfo {
+    pub id: String,
     pub email: String,
     pub login_session: String,
 }

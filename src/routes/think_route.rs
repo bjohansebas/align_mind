@@ -1,9 +1,11 @@
 use crate::jwt::UserToken;
 use crate::services::think_service::*;
 use crate::utils::responde_request::{response_api_bool, response_api_entity};
+use align_mind_server::establish_connection;
 use align_mind_server::models::response_model::Response;
 use align_mind_server::models::think_model::*;
 
+use diesel::PgConnection;
 use rocket::response::status;
 use rocket::serde::json::Json;
 use rocket::serde::uuid::Uuid;
@@ -31,9 +33,10 @@ pub fn save_think(
     if let Err(e) = token {
         return e;
     }
+    let connection: &mut PgConnection = &mut establish_connection();
 
     let data_think: NewThinkDTO = payload.into_inner().into_inner();
-    let result_action: bool = create_think(uid_user, data_think);
+    let result_action: bool = create_think(uid_user, data_think, connection);
     response_api_bool(result_action)
 }
 

@@ -3,28 +3,37 @@ use super::users_service::get_user;
 use align_mind_server::establish_connection;
 use align_mind_server::models::color_model::Color;
 use align_mind_server::models::place_model::*;
+use align_mind_server::models::response_model::ResponseError;
 use align_mind_server::models::user_model::User;
 use align_mind_server::schema::places;
 
 use chrono::Utc;
 use diesel::prelude::*;
 use diesel::result::Error;
+use rocket::http::Status;
 use uuid::Uuid;
 
-pub fn get_places_with_user_uuid(uuid_user: Uuid) -> Option<Vec<Place>> {
-    let connection: &mut PgConnection = &mut establish_connection();
+pub fn get_places_with_user_uuid(
+    uuid_user: Uuid,
+    conn: &mut PgConnection,
+) -> Result<Vec<Place>, ResponseError> {
+    let result_user: Result<User, ResponseError> = get_user(uuid_user, conn);
 
-    let result_user: Option<User> = get_user(uuid_user);
-
-    if let Some(user) = result_user {
-        let result_places: Result<Vec<Place>, Error> =
-            Place::belonging_to(&user).load::<Place>(connection);
-        if let Ok(places) = result_places {
-            return Some(places);
-        }
+    if let Err(e) = result_user {
+        return Err(e);
     }
 
-    None
+    let result_places: Result<Vec<Place>, Error> =
+        Place::belonging_to(&result_user.unwrap()).load::<Place>(conn);
+
+    if result_places.is_err() {
+        return Err(ResponseError {
+            code: Status::BadRequest.code,
+            message: "Unknown error".to_string(),
+        });
+    }
+
+    Ok(result_places.unwrap())
 }
 
 pub fn get_place(uuid_place: Uuid) -> Option<Place> {
@@ -44,29 +53,32 @@ pub fn get_place(uuid_place: Uuid) -> Option<Place> {
 pub fn create_place(uuid_user: Uuid, payload: NewPlaceDTO) -> bool {
     let connection: &mut PgConnection = &mut establish_connection();
 
-    let result_user: Option<User> = get_user(uuid_user);
+    let result_user: Result<User, ResponseError> = get_user(uuid_user, connection);
 
-    if let Some(user) = result_user {
-        let uuid_color: Result<Uuid, uuid::Error> =
-            Uuid::parse_str(payload.color_id.unwrap().as_str());
+    if let Err(_) = result_user {
+        return false;
+    }
 
-        if let Ok(uuid) = uuid_color {
-            let result_color: Option<Color> = get_color(uuid);
+    let uuid_color: Result<Uuid, uuid::Error> = Uuid::parse_str(payload.color_id.unwrap().as_str());
 
-            if let Some(color) = result_color {
-                if color.user_id.eq(&Some(uuid_user)) {
-                    let place: NewPlace = NewPlace {
-                        name_place: payload.name_place.unwrap(),
-                        user_id: user.user_id,
-                        color_id: color.color_id,
-                    };
+    if uuid_color.is_err() {
+        return false;
+    }
 
-                    return diesel::insert_into(places::table)
-                        .values(&place)
-                        .execute(connection)
-                        .is_ok();
-                }
-            }
+    let result_color: Option<Color> = get_color(uuid_color.unwrap());
+
+    if let Some(color) = result_color {
+        if color.user_id.eq(&Some(uuid_user)) {
+            let place: NewPlace = NewPlace {
+                name_place: payload.name_place.unwrap(),
+                user_id: uuid_user,
+                color_id: color.color_id,
+            };
+
+            return diesel::insert_into(places::table)
+                .values(&place)
+                .execute(connection)
+                .is_ok();
         }
     }
 

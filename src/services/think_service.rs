@@ -1,7 +1,9 @@
 use super::place_service::get_place;
 use super::users_service::get_user;
+
 use align_mind_server::establish_connection;
 use align_mind_server::models::place_model::Place;
+use align_mind_server::models::response_model::ResponseError;
 use align_mind_server::models::think_model::*;
 use align_mind_server::models::user_model::User;
 use align_mind_server::schema::{thinks, trash_thinks};
@@ -9,21 +11,26 @@ use align_mind_server::schema::{thinks, trash_thinks};
 use chrono::{Datelike, NaiveDate, NaiveDateTime, Utc};
 use diesel::prelude::*;
 use diesel::result::Error;
+use rocket::http::Status;
 use uuid::Uuid;
 
-pub fn get_thinks_with_user_uuid(uuid_user: Uuid) -> Option<Vec<Think>> {
-    let connection: &mut PgConnection = &mut establish_connection();
+pub fn get_thinks_with_user_uuid(
+    uuid_user: Uuid,
+    conn: &mut PgConnection,
+) -> Result<Vec<Think>, ResponseError> {
+    let result_user: User = get_user(uuid_user, conn)?;
 
-    let result_user: Option<User> = get_user(uuid_user);
+    let result_thinks: Result<Vec<Think>, Error> =
+        Think::belonging_to(&result_user).load::<Think>(conn);
 
-    if let Some(user) = result_user {
-        let result_thinks: Result<Vec<Think>, Error> =
-            Think::belonging_to(&user).load::<Think>(connection);
-        if let Ok(thinks) = result_thinks {
-            return Some(thinks);
-        }
+    if result_thinks.is_err() {
+        return Err(ResponseError {
+            code: Status::BadRequest.code,
+            message: "Unknown error".to_string(),
+        });
     }
-    None
+
+    Ok(result_thinks.unwrap())
 }
 
 pub fn get_think(uuid_think: Uuid) -> Option<Think> {
@@ -40,35 +47,36 @@ pub fn get_think(uuid_think: Uuid) -> Option<Think> {
 
 // poner ruta para ver los archivados y los desarchivados
 
-pub fn create_think(uuid_user: Uuid, payload: NewThinkDTO) -> bool {
-    let connection: &mut PgConnection = &mut establish_connection();
+pub fn create_think(uuid_user: Uuid, payload: NewThinkDTO, conn: &mut PgConnection) -> bool {
+    let result_user: Result<User, ResponseError> = get_user(uuid_user, conn);
 
-    let result_user: Option<User> = get_user(uuid_user);
+    if let Err(_) = result_user {
+        return false;
+    }
 
-    if let Some(user) = result_user {
-        let uuid_place: Result<Uuid, uuid::Error> =
-            Uuid::parse_str(payload.place_id.unwrap().as_str());
+    let uuid_place: Result<Uuid, uuid::Error> = Uuid::parse_str(payload.place_id.unwrap().as_str());
 
-        if let Ok(uuid) = uuid_place {
-            let result_place: Option<Place> = get_place(uuid);
-            
-            if let Some(place) = result_place {
-                if place.user_id.eq(&user.user_id) {
-                    let think: NewThink = NewThink {
-                        user_id: user.user_id,
-                        is_archive: Some(false),
-                        place_id: place.place_id,
-                        text_think: payload.text_think.unwrap(),
-                        created_at: Some(Utc::now().naive_utc()),
-                        updated_at: Some(Utc::now().naive_utc()),
-                    };
+    if uuid_place.is_err() {
+        return false;
+    }
 
-                    return diesel::insert_into(thinks::table)
-                        .values(&think)
-                        .execute(connection)
-                        .is_ok();
-                }
-            }
+    let result_place: Option<Place> = get_place(uuid_place.unwrap());
+
+    if let Some(place) = result_place {
+        if place.user_id.eq(&uuid_user) {
+            let think: NewThink = NewThink {
+                user_id: uuid_user,
+                is_archive: Some(false),
+                place_id: place.place_id,
+                text_think: payload.text_think.unwrap(),
+                created_at: Some(Utc::now().naive_utc()),
+                updated_at: Some(Utc::now().naive_utc()),
+            };
+
+            return diesel::insert_into(thinks::table)
+                .values(&think)
+                .execute(conn)
+                .is_ok();
         }
     }
     false

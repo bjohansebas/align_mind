@@ -1,11 +1,13 @@
 use align_mind_server::establish_connection;
 use align_mind_server::models::color_model::*;
+use align_mind_server::models::response_model::ResponseError;
 use align_mind_server::models::user_model::User;
 use align_mind_server::schema::colors;
 
 use chrono::Utc;
 use diesel::prelude::*;
 use diesel::result::Error;
+use rocket::http::Status;
 use uuid::Uuid;
 
 use super::users_service::get_user;
@@ -23,38 +25,47 @@ pub fn get_color(uuid_color: Uuid) -> Option<Color> {
     None
 }
 
-pub fn get_colors_with_user_uuid(uuid_user: Uuid) -> Option<Vec<Color>> {
-    let connection: &mut PgConnection = &mut establish_connection();
+pub fn get_colors_with_user_uuid(
+    uuid_user: Uuid,
+    conn: &mut PgConnection,
+) -> Result<Vec<Color>, ResponseError> {
+    let result_user: Result<User, ResponseError> = get_user(uuid_user, conn);
 
-    let result_user: Option<User> = get_user(uuid_user);
-
-    if let Some(user) = result_user {
-        let result_colors: Result<Vec<Color>, Error> =
-            Color::belonging_to(&user).load::<Color>(connection);
-        if let Ok(colors) = result_colors {
-            return Some(colors);
-        }
+    if let Err(e) = result_user {
+        return Err(e);
     }
-    None
+
+    let result_colors: Result<Vec<Color>, Error> =
+        Color::belonging_to(&result_user.unwrap()).load::<Color>(conn);
+
+    if result_colors.is_err() {
+        return Err(ResponseError {
+            code: Status::BadRequest.code,
+            message: "Unknown error".to_string(),
+        });
+    }
+
+    Ok(result_colors.unwrap())
 }
 
 pub fn create_color(user_uuid: Uuid, payload: NewColorDTO) -> bool {
     let connection: &mut PgConnection = &mut establish_connection();
 
-    let result_user: Option<User> = get_user(user_uuid);
-    if let Some(user) = result_user {
-        let color: NewColor = NewColor {
-            user_id: user.user_id,
-            code_color: payload.code_color.unwrap(),
-            name_color: payload.name_color.unwrap(),
-        };
-
-        return diesel::insert_into(colors::table)
-            .values(&color)
-            .execute(connection)
-            .is_ok();
+    let result_user: Result<User, ResponseError> = get_user(user_uuid, connection);
+    if let Err(_) = result_user {
+        return false;
     }
-    false
+
+    let color: NewColor = NewColor {
+        user_id: user_uuid,
+        code_color: payload.code_color.unwrap(),
+        name_color: payload.name_color.unwrap(),
+    };
+
+    diesel::insert_into(colors::table)
+        .values(&color)
+        .execute(connection)
+        .is_ok()
 }
 
 pub fn update_color(uuid_color: Uuid, payload: UpdateColorDTO) -> bool {

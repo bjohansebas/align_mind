@@ -1,10 +1,12 @@
-use crate::{
-    jwt::UserToken,
-    services::emotion_service::*,
-    utils::responde_request::{response_api_bool, response_api_entity},
-};
-use align_mind_server::models::{emotion_model::*, response_model::Response};
+use crate::jwt::UserToken;
+use crate::services::emotion_service::*;
+use crate::utils::responde_request::{response_api, response_api_data};
 
+use align_mind_server::establish_connection;
+use align_mind_server::models::emotion_model::*;
+use align_mind_server::models::response_model::{Response, ResponseError, ResponseSuccess};
+
+use diesel::PgConnection;
 use rocket::response::status;
 use rocket::serde::json::Json;
 use rocket::serde::uuid::Uuid;
@@ -19,8 +21,10 @@ pub fn getting_emotion(
         return e;
     }
 
-    let result_emotion: Option<Emotion> = get_emotion(uid_emotion);
-    response_api_entity(result_emotion)
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_emotion: Result<Emotion, ResponseError> = get_emotion(uid_emotion, connection);
+    response_api_data(result_emotion)
 }
 
 #[post("/", format = "application/json", data = "<payload>")]
@@ -32,8 +36,12 @@ pub fn save_emotion(
         return e;
     }
 
-    let result_action: bool = create_emotion(payload.into_inner().into_inner());
-    response_api_bool(result_action)
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_action: Result<ResponseSuccess, ResponseError> =
+        create_emotion(payload.into_inner().into_inner(), connection);
+
+    response_api(result_action)
 }
 
 #[put("/<uid_emotion>", format = "application/json", data = "<payload>")]
@@ -46,8 +54,12 @@ pub fn updating_emotion(
         return e;
     }
 
-    let result_action: bool = update_emotion(uid_emotion, payload.into_inner().into_inner());
-    response_api_bool(result_action)
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_action: Result<ResponseSuccess, ResponseError> =
+        update_emotion(uid_emotion, payload.into_inner().into_inner(), connection);
+
+    response_api(result_action)
 }
 
 #[delete("/<uid_emotion>")]
@@ -59,6 +71,10 @@ pub fn deleting_emotion(
         return e;
     }
 
-    let result_action: bool = delete_emotion(uid_emotion);
-    response_api_bool(result_action)
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_action: Result<ResponseSuccess, ResponseError> =
+        delete_emotion(uid_emotion, connection);
+
+    response_api(result_action)
 }

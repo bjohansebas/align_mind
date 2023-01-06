@@ -1,8 +1,8 @@
 use crate::jwt::UserToken;
 use crate::services::think_service::*;
-use crate::utils::responde_request::{response_api_bool, response_api_entity};
+use crate::utils::responde_request::{response_api, response_api_data};
 use align_mind_server::establish_connection;
-use align_mind_server::models::response_model::Response;
+use align_mind_server::models::response_model::{Response, ResponseError, ResponseSuccess};
 use align_mind_server::models::think_model::*;
 
 use diesel::PgConnection;
@@ -20,8 +20,10 @@ pub fn getting_think(
         return e;
     }
 
-    let result_think: Option<Think> = get_think(uid_think);
-    response_api_entity(result_think)
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_think: Result<Think, ResponseError> = get_think(uid_think, connection);
+    response_api_data(result_think)
 }
 
 #[post("/<uid_user>", format = "application/json", data = "<payload>")]
@@ -36,8 +38,10 @@ pub fn save_think(
     let connection: &mut PgConnection = &mut establish_connection();
 
     let data_think: NewThinkDTO = payload.into_inner().into_inner();
-    let result_action: bool = create_think(uid_user, data_think, connection);
-    response_api_bool(result_action)
+    let result_action: Result<ResponseSuccess, ResponseError> =
+        create_think(uid_user, data_think, connection);
+
+    response_api(result_action)
 }
 
 #[post("/<uid_think>/trash")]
@@ -48,8 +52,13 @@ pub fn move_to_trash(
     if let Err(e) = token {
         return e;
     }
-    let result_action: bool = move_think_to_trash(uid_think);
-    response_api_bool(result_action)
+
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_action: Result<ResponseSuccess, ResponseError> =
+        move_think_to_trash(uid_think, connection);
+
+    response_api(result_action)
 }
 
 #[put("/<uid_think>", format = "application/json", data = "<payload>")]
@@ -62,8 +71,12 @@ pub fn updating_think(
         return e;
     }
 
-    let result_action: bool = update_think(uid_think, payload.into_inner().into_inner());
-    response_api_bool(result_action)
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_action: Result<ResponseSuccess, ResponseError> =
+        update_think(uid_think, payload.into_inner().into_inner(), connection);
+
+    response_api(result_action)
 }
 
 #[delete("/<uid_think>")]
@@ -75,6 +88,8 @@ pub fn deleting_think(
         return e;
     }
 
-    let result_action: bool = delete_think(uid_think);
-    response_api_bool(result_action)
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_action: Result<ResponseSuccess, ResponseError> = delete_think(uid_think, connection);
+    response_api(result_action)
 }

@@ -1,9 +1,8 @@
 use super::place_service::get_place;
 use super::users_service::get_user;
 
-use align_mind_server::establish_connection;
 use align_mind_server::models::place_model::Place;
-use align_mind_server::models::response_model::ResponseError;
+use align_mind_server::models::response_model::{ResponseError, ResponseSuccess};
 use align_mind_server::models::think_model::*;
 use align_mind_server::models::user_model::User;
 use align_mind_server::schema::{thinks, trash_thinks};
@@ -33,117 +32,176 @@ pub fn get_thinks_with_user_uuid(
     Ok(result_thinks.unwrap())
 }
 
-pub fn get_think(uuid_think: Uuid) -> Option<Think> {
-    let connection: &mut PgConnection = &mut establish_connection();
-
-    let result_think: Result<Think, Error> = thinks::table
+pub fn get_think(uuid_think: Uuid, conn: &mut PgConnection) -> Result<Think, ResponseError> {
+    thinks::table
         .filter(thinks::think_id.eq(uuid_think))
-        .first::<Think>(connection);
-    if let Ok(think) = result_think {
-        return Some(think);
-    }
-    None
+        .first::<Think>(conn)
+        .map_err(|_| ResponseError {
+            code: Status::NotFound.code,
+            message: "The think not found".to_string(),
+        })
 }
 
-// poner ruta para ver los archivados y los desarchivados
+pub fn get_archive_think(conn: &mut PgConnection) -> Result<Vec<Think>, ResponseError> {
+    thinks::table
+        .filter(thinks::is_archive.eq(true))
+        .load::<Think>(conn)
+        .map_err(|_| ResponseError {
+            code: Status::NotFound.code,
+            message: "Unknow error".to_string(),
+        })
+}
 
-pub fn create_think(uuid_user: Uuid, payload: NewThinkDTO, conn: &mut PgConnection) -> bool {
-    let result_user: Result<User, ResponseError> = get_user(uuid_user, conn);
+pub fn get_unarchive_think(conn: &mut PgConnection) -> Result<Vec<Think>, ResponseError> {
+    thinks::table
+        .filter(thinks::is_archive.eq(false))
+        .load::<Think>(conn)
+        .map_err(|_| ResponseError {
+            code: Status::NotFound.code,
+            message: "Unknow error".to_string(),
+        })
+}
 
-    if let Err(_) = result_user {
-        return false;
-    }
+pub fn create_think(
+    uuid_user: Uuid,
+    payload: NewThinkDTO,
+    conn: &mut PgConnection,
+) -> Result<ResponseSuccess, ResponseError> {
+    get_user(uuid_user, conn)?;
 
     let uuid_place: Result<Uuid, uuid::Error> = Uuid::parse_str(payload.place_id.unwrap().as_str());
 
     if uuid_place.is_err() {
-        return false;
+        return Err(ResponseError {
+            code: Status::NotFound.code,
+            message: "The think not found".to_string(),
+        });
     }
 
-    let result_place: Option<Place> = get_place(uuid_place.unwrap());
+    let result_place: Place = get_place(uuid_place.unwrap(), conn)?;
 
-    if let Some(place) = result_place {
-        if place.user_id.eq(&uuid_user) {
-            let think: NewThink = NewThink {
-                user_id: uuid_user,
-                is_archive: Some(false),
-                place_id: place.place_id,
-                text_think: payload.text_think.unwrap(),
-                created_at: Some(Utc::now().naive_utc()),
-                updated_at: Some(Utc::now().naive_utc()),
-            };
-
-            return diesel::insert_into(thinks::table)
-                .values(&think)
-                .execute(conn)
-                .is_ok();
-        }
+    if result_place.user_id.eq(&uuid_user) {
+        return Err(ResponseError {
+            code: Status::BadRequest.code,
+            message: "The place not own of user".to_string(),
+        });
     }
-    false
+    let think: NewThink = NewThink {
+        user_id: uuid_user,
+        is_archive: Some(false),
+        place_id: result_place.place_id,
+        text_think: payload.text_think.unwrap(),
+        created_at: Some(Utc::now().naive_utc()),
+        updated_at: Some(Utc::now().naive_utc()),
+    };
+
+    let insert_action: bool = diesel::insert_into(thinks::table)
+        .values(&think)
+        .execute(conn)
+        .is_ok();
+
+    if !insert_action {
+        return Err(ResponseError {
+            code: Status::BadRequest.code,
+            message: "Unknow error".to_string(),
+        });
+    }
+
+    Ok(ResponseSuccess {
+        message: "The think had been created".to_string(),
+        data: serde_json::to_value("").unwrap(),
+    })
 }
 
-pub fn update_think(uuid_think: Uuid, payload: UpdateThinkDTO) -> bool {
-    let connection: &mut PgConnection = &mut establish_connection();
+pub fn update_think(
+    uuid_think: Uuid,
+    payload: UpdateThinkDTO,
+    conn: &mut PgConnection,
+) -> Result<ResponseSuccess, ResponseError> {
+    let result_think: Think = get_think(uuid_think, conn)?;
 
-    let result_think: Option<Think> = get_think(uuid_think);
-    if let Some(think) = result_think {
-        let data_think: UpdateThink = UpdateThink {
-            text_think: payload.text_think,
-            is_archive: payload.is_archive,
-            updated_at: Some(Utc::now().naive_utc()),
-        };
+    let data_think: UpdateThink = UpdateThink {
+        text_think: payload.text_think,
+        is_archive: payload.is_archive,
+        updated_at: Some(Utc::now().naive_utc()),
+    };
 
-        return diesel::update(&think)
-            .set(&data_think)
-            .execute(connection)
-            .is_ok();
+    let update_action: bool = diesel::update(&result_think)
+        .set(&data_think)
+        .execute(conn)
+        .is_ok();
+
+    if !update_action {
+        return Err(ResponseError {
+            code: Status::BadRequest.code,
+            message: "Unknow error".to_string(),
+        });
     }
-    false
+
+    Ok(ResponseSuccess {
+        message: "The think had been updated".to_string(),
+        data: serde_json::to_value("").unwrap(),
+    })
 }
 
-pub fn delete_think(uuid_think: Uuid) -> bool {
-    let connection: &mut PgConnection = &mut establish_connection();
+pub fn delete_think(
+    uuid_think: Uuid,
+    conn: &mut PgConnection,
+) -> Result<ResponseSuccess, ResponseError> {
+    let result_think: Think = get_think(uuid_think, conn)?;
 
-    let result_think: Option<Think> = get_think(uuid_think);
+    let delete_action = diesel::delete(&result_think).execute(conn).is_ok();
 
-    if let Some(think) = result_think {
-        return diesel::delete(&think).execute(connection).is_ok();
+    if !delete_action {
+        return Err(ResponseError {
+            code: Status::BadRequest.code,
+            message: "The think hadn't been deleted".to_string(),
+        });
     }
-    false
+
+    Ok(ResponseSuccess {
+        message: "The think had been deleted".to_string(),
+        data: serde_json::to_value("").unwrap(),
+    })
 }
 
-pub fn move_think_to_trash(uuid_think: Uuid) -> bool {
-    let connection: &mut PgConnection = &mut establish_connection();
+pub fn move_think_to_trash(
+    uuid_think: Uuid,
+    conn: &mut PgConnection,
+) -> Result<ResponseSuccess, ResponseError> {
+    let result_think: Think = get_think(uuid_think, conn)?;
 
-    let result_think: Option<Think> = get_think(uuid_think);
+    let date_now: NaiveDateTime = Utc::now().naive_utc();
+    let date_start: Option<NaiveDate> =
+        NaiveDate::from_ymd_opt(date_now.year(), date_now.month(), date_now.day());
+    let date_end: Option<NaiveDate> =
+        NaiveDate::from_ymd_opt(date_now.year(), date_now.month() + 1, date_now.day());
 
-    if let Some(think) = result_think {
-        let date_now: NaiveDateTime = Utc::now().naive_utc();
-        let date_start: Option<NaiveDate> =
-            NaiveDate::from_ymd_opt(date_now.year(), date_now.month(), date_now.day());
-        let date_end: Option<NaiveDate> =
-            NaiveDate::from_ymd_opt(date_now.year(), date_now.month() + 1, date_now.day());
+    let payload: NewTrashThink = NewTrashThink {
+        text_think: result_think.text_think,
+        user_id: result_think.user_id,
+        place_id: result_think.place_id,
+        date_start,
+        date_end,
+        created_at: result_think.created_at,
+        updated_at: result_think.updated_at,
+    };
 
-        let payload: NewTrashThink = NewTrashThink {
-            text_think: think.text_think,
-            user_id: think.user_id,
-            place_id: think.place_id,
-            date_start,
-            date_end,
-            created_at: think.created_at,
-            updated_at: think.updated_at,
-        };
+    let insert_trash: bool = diesel::insert_into(trash_thinks::table)
+        .values(&payload)
+        .execute(conn)
+        .is_ok();
 
-        let insert_trash: bool = diesel::insert_into(trash_thinks::table)
-            .values(&payload)
-            .execute(connection)
-            .is_ok();
-
-        if insert_trash {
-            delete_think(uuid_think);
-            return true;
-        }
+    if !insert_trash {
+        return Err(ResponseError {
+            code: Status::BadRequest.code,
+            message: "Unknown error".to_string(),
+        });
     }
+    delete_think(uuid_think, conn)?;
 
-    false
+    Ok(ResponseSuccess {
+        message: "Think has moved to trash".to_string(),
+        data: serde_json::to_value("").unwrap(),
+    })
 }

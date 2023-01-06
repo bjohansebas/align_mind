@@ -1,9 +1,12 @@
 use crate::jwt::UserToken;
 use crate::services::trash_service::*;
-use crate::utils::responde_request::{response_api_bool, response_api_entity};
-use align_mind_server::models::response_model::Response;
+use crate::utils::responde_request::{response_api, response_api_data};
+
+use align_mind_server::establish_connection;
+use align_mind_server::models::response_model::{Response, ResponseError, ResponseSuccess};
 use align_mind_server::models::think_model::*;
 
+use diesel::PgConnection;
 use rocket::response::status;
 use rocket::serde::json::Json;
 use uuid::Uuid;
@@ -17,8 +20,10 @@ pub fn getting_trash(
         return e;
     }
 
-    let result_trash: Option<TrashThink> = get_trash_think(uid_trash);
-    response_api_entity(result_trash)
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_trash: Result<TrashThink, ResponseError> = get_trash_think(uid_trash, connection);
+    response_api_data(result_trash)
 }
 
 #[post("/<uid_trash>")]
@@ -30,6 +35,9 @@ pub fn restore_think(
         return e;
     }
 
-    let result_action: bool = remove_of_trash(uid_trash);
-    response_api_bool(result_action)
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_action: Result<ResponseSuccess, ResponseError> =
+        remove_of_trash(uid_trash, connection);
+    response_api(result_action)
 }

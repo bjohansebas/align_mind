@@ -1,9 +1,11 @@
 use crate::jwt::UserToken;
 use crate::services::color_service::*;
-use crate::utils::responde_request::{response_api_bool, response_api_entity};
+use crate::utils::responde_request::{response_api, response_api_data};
+use align_mind_server::establish_connection;
 use align_mind_server::models::color_model::*;
-use align_mind_server::models::response_model::Response;
+use align_mind_server::models::response_model::{Response, ResponseError, ResponseSuccess};
 
+use diesel::PgConnection;
 use rocket::response::status;
 use rocket::serde::json::Json;
 use rocket::serde::uuid::Uuid;
@@ -18,8 +20,10 @@ pub fn getting_color(
         return e;
     }
 
-    let result_color: Option<Color> = get_color(uid_color);
-    response_api_entity(result_color)
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_color: Result<Color, ResponseError> = get_color(uid_color, connection);
+    response_api_data(result_color)
 }
 
 #[post("/<uid_user>", format = "application/json", data = "<payload>")]
@@ -32,8 +36,12 @@ pub fn save_color(
         return e;
     }
 
-    let result_action: bool = create_color(uid_user, payload.into_inner().into_inner());
-    response_api_bool(result_action)
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_action: Result<ResponseSuccess, ResponseError> =
+        create_color(uid_user, payload.into_inner().into_inner(), connection);
+
+    response_api(result_action)
 }
 
 #[put("/<uid_color>", format = "application/json", data = "<payload>")]
@@ -46,8 +54,12 @@ pub fn updating_color(
         return e;
     }
 
-    let result_action: bool = update_color(uid_color, payload.into_inner().into_inner());
-    response_api_bool(result_action)
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_action: Result<ResponseSuccess, ResponseError> =
+        update_color(uid_color, payload.into_inner().into_inner(), connection);
+
+    response_api(result_action)
 }
 
 #[delete("/<uid_color>")]
@@ -59,6 +71,9 @@ pub fn deleting_color(
         return e;
     }
 
-    let result_action: bool = delete_color(uid_color);
-    response_api_bool(result_action)
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_action: Result<ResponseSuccess, ResponseError> = delete_color(uid_color, connection);
+
+    response_api(result_action)
 }

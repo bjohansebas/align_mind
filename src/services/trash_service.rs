@@ -1,6 +1,5 @@
 use super::users_service::get_user;
-use align_mind_server::establish_connection;
-use align_mind_server::models::response_model::ResponseError;
+use align_mind_server::models::response_model::{ResponseError, ResponseSuccess};
 use align_mind_server::models::think_model::*;
 use align_mind_server::models::user_model::User;
 use align_mind_server::schema::{thinks, trash_thinks};
@@ -29,56 +28,70 @@ pub fn get_trash_thinks_with_user_uuid(
     Ok(result_thinks.unwrap())
 }
 
-pub fn get_trash_think(uuid_trash_think: Uuid) -> Option<TrashThink> {
-    let connection: &mut PgConnection = &mut establish_connection();
-
-    let result_trash_think: Result<TrashThink, Error> = trash_thinks::table
+pub fn get_trash_think(
+    uuid_trash_think: Uuid,
+    conn: &mut PgConnection,
+) -> Result<TrashThink, ResponseError> {
+    trash_thinks::table
         .filter(trash_thinks::trash_th_id.eq(uuid_trash_think))
-        .first::<TrashThink>(connection);
-
-    if let Ok(trash) = result_trash_think {
-        return Some(trash);
-    }
-
-    None
+        .first::<TrashThink>(conn)
+        .map_err(|_| ResponseError {
+            code: Status::NotFound.code,
+            message: "The think not found".to_string(),
+        })
 }
 
-pub fn remove_of_trash(uuid_trash: Uuid) -> bool {
-    let connection: &mut PgConnection = &mut establish_connection();
+pub fn remove_of_trash(
+    uuid_trash_think: Uuid,
+    conn: &mut PgConnection,
+) -> Result<ResponseSuccess, ResponseError> {
+    let result_trash: TrashThink = get_trash_think(uuid_trash_think, conn)?;
 
-    let result_trash_think: Option<TrashThink> = get_trash_think(uuid_trash);
+    let payload: NewThink = NewThink {
+        text_think: result_trash.text_think,
+        user_id: result_trash.user_id,
+        place_id: result_trash.place_id,
+        created_at: Some(result_trash.created_at),
+        updated_at: Some(result_trash.updated_at),
+        is_archive: Some(false),
+    };
 
-    if let Some(trash) = result_trash_think {
-        let payload: NewThink = NewThink {
-            text_think: trash.text_think,
-            user_id: trash.user_id,
-            place_id: trash.place_id,
-            created_at: Some(trash.created_at),
-            updated_at: Some(trash.updated_at),
-            is_archive: Some(false),
-        };
+    let insert_think: bool = diesel::insert_into(thinks::table)
+        .values(&payload)
+        .execute(conn)
+        .is_ok();
 
-        let insert_think: bool = diesel::insert_into(thinks::table)
-            .values(&payload)
-            .execute(connection)
-            .is_ok();
-
-        if insert_think {
-            delete_trash(uuid_trash);
-            return true;
-        }
+    if !insert_think {
+        return Err(ResponseError {
+            code: Status::BadRequest.code,
+            message: "Unknown error".to_string(),
+        });
     }
+    delete_trash(uuid_trash_think, conn)?;
 
-    false
+    Ok(ResponseSuccess {
+        message: "Think has restored of trash".to_string(),
+        data: serde_json::to_value("").unwrap(),
+    })
 }
 
-pub fn delete_trash(uuid_trash: Uuid) -> bool {
-    let connection: &mut PgConnection = &mut establish_connection();
+pub fn delete_trash(
+    uuid_trash_think: Uuid,
+    conn: &mut PgConnection,
+) -> Result<ResponseSuccess, ResponseError> {
+    let result_trash: TrashThink = get_trash_think(uuid_trash_think, conn)?;
 
-    let result_trash: Option<TrashThink> = get_trash_think(uuid_trash);
+    let action_result: bool = diesel::delete(&result_trash).execute(conn).is_ok();
 
-    if let Some(trash) = result_trash {
-        return diesel::delete(&trash).execute(connection).is_ok();
+    if !action_result {
+        return Err(ResponseError {
+            code: Status::BadRequest.code,
+            message: "Not think delete".to_string(),
+        });
     }
-    false
+
+    Ok(ResponseSuccess {
+        message: "Think delete".to_string(),
+        data: serde_json::to_value("").unwrap(),
+    })
 }

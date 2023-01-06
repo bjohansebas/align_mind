@@ -1,11 +1,13 @@
 use crate::jwt::UserToken;
 use crate::services::place_service::*;
 
-use crate::utils::responde_request::{response_api_bool, response_api_entity};
+use crate::utils::responde_request::{response_api, response_api_data};
 
+use align_mind_server::establish_connection;
 use align_mind_server::models::place_model::*;
-use align_mind_server::models::response_model::Response;
+use align_mind_server::models::response_model::{Response, ResponseError, ResponseSuccess};
 
+use diesel::PgConnection;
 use rocket::response::status;
 use rocket::serde::json::Json;
 use rocket::serde::uuid::Uuid;
@@ -20,8 +22,10 @@ pub fn getting_place(
         return e;
     }
 
-    let result_place: Option<Place> = get_place(uid_place);
-    response_api_entity(result_place)
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_place: Result<Place, ResponseError> = get_place(uid_place, connection);
+    response_api_data(result_place)
 }
 
 #[post("/<uid_user>", format = "application/json", data = "<payload>")]
@@ -34,8 +38,12 @@ pub fn save_place(
         return e;
     }
 
-    let result_action: bool = create_place(uid_user, payload.into_inner().into_inner());
-    response_api_bool(result_action)
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_action: Result<ResponseSuccess, ResponseError> =
+        create_place(uid_user, payload.into_inner().into_inner(), connection);
+
+    response_api(result_action)
 }
 
 #[put("/<uid_place>", format = "application/json", data = "<payload>")]
@@ -48,8 +56,12 @@ pub fn updating_place(
         return e;
     }
 
-    let result_action: bool = update_place(uid_place, payload.into_inner().into_inner());
-    response_api_bool(result_action)
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_action: Result<ResponseSuccess, ResponseError> =
+        update_place(uid_place, payload.into_inner().into_inner(), connection);
+
+    response_api(result_action)
 }
 
 #[delete("/<uid_place>")]
@@ -61,6 +73,8 @@ pub fn deleting_place(
         return e;
     }
 
-    let result_action: bool = delete_place(uid_place);
-    response_api_bool(result_action)
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_action: Result<ResponseSuccess, ResponseError> = delete_place(uid_place, connection);
+    response_api(result_action)
 }

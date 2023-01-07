@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate rocket;
-use rocket::launch;
+use rocket::http::Method;
+use rocket_cors::AllowedHeaders;
+use rocket_cors::{AllowedOrigins, CorsOptions};
 
 use routes::auth_route::*;
 use routes::color_route::*;
@@ -17,6 +19,18 @@ mod utils;
 
 #[launch]
 fn rocket() -> _ {
+    let cors = CorsOptions {
+        allowed_origins: AllowedOrigins::all(),
+        allowed_headers: AllowedHeaders::some(&["Authorization", "Accept","Content-Type"]),
+        allowed_methods: vec![Method::Get, Method::Post, Method::Delete, Method::Put]
+            .into_iter()
+            .map(From::from)
+            .collect(),
+        allow_credentials: true,
+        ..Default::default()
+    }
+    .to_cors();
+
     rocket::build()
         .mount("/auth", routes![sign_up, login])
         .mount(
@@ -62,5 +76,6 @@ fn rocket() -> _ {
                 updating_emotion
             ],
         )
+        .attach(cors.unwrap())
         .register("/", catchers![rocket_validation::validation_catcher])
 }

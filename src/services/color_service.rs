@@ -40,6 +40,21 @@ pub fn get_colors_with_user_uuid(
     Ok(result_colors.unwrap())
 }
 
+pub fn get_color_by_code_and_user(
+    uuid_user: Uuid,
+    code: String,
+    conn: &mut PgConnection,
+) -> Result<Color, ResponseError> {
+    colors::table
+        .filter(colors::user_id.eq(uuid_user))
+        .filter(colors::code_color.eq(code))
+        .first::<Color>(conn)
+        .map_err(|_| ResponseError {
+            code: Status::NotFound.code,
+            message: "The color not found".to_string(),
+        })
+}
+
 pub fn create_color(
     user_uuid: Uuid,
     payload: NewColorDTO,

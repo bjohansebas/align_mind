@@ -1,7 +1,7 @@
-use super::color_service::get_color;
+use super::color_service::{create_color, get_color, get_color_by_code_and_user};
 use super::users_service::get_user;
 
-use align_mind_server::models::color_model::Color;
+use align_mind_server::models::color_model::{Color, NewColorDTO};
 use align_mind_server::models::place_model::*;
 use align_mind_server::models::response_model::{ResponseError, ResponseSuccess};
 use align_mind_server::models::user_model::User;
@@ -49,23 +49,27 @@ pub fn create_place(
 ) -> Result<ResponseSuccess, ResponseError> {
     get_user(uuid_user, conn)?;
 
-    let uuid_color: Result<Uuid, uuid::Error> = Uuid::parse_str(payload.color_id.unwrap().as_str());
-
-    if uuid_color.is_err() {
-        return Err(ResponseError {
-            code: Status::NotFound.code,
-            message: "The place not found".to_string(),
-        });
+    let result_color =
+        get_color_by_code_and_user(uuid_user, payload.code_color.to_owned().unwrap(), conn);
+    if result_color.is_err() {
+        if let Some(name_color) = payload.name_color {
+            let _result = create_color(
+                uuid_user,
+                NewColorDTO {
+                    code_color: payload.code_color.to_owned(),
+                    name_color: Some(name_color),
+                },
+                conn,
+            )?;
+        } else {
+            return Err(ResponseError {
+                code: Status::BadRequest.code,
+                message: "Name color is required for created new color".to_string(),
+            });
+        }
     }
-
-    let result_color: Color = get_color(uuid_color.unwrap(), conn)?;
-
-    if !result_color.user_id.eq(&Some(uuid_user)) {
-        return Err(ResponseError {
-            code: Status::BadRequest.code,
-            message: "The color not own of user".to_string(),
-        });
-    }
+    let result_color: Color =
+        get_color_by_code_and_user(uuid_user, payload.code_color.to_owned().unwrap(), conn)?;
 
     let place: NewPlace = NewPlace {
         name_place: payload.name_place.unwrap(),

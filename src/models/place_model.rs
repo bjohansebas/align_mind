@@ -32,10 +32,12 @@ pub struct NewPlace {
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct NewPlaceDTO {
-    #[validate(length(min = 5), required)]
+    #[validate(length(min = 5, max = 30), required)]
     pub name_place: Option<String>,
-    #[validate(length(equal = 36), required)]
-    pub color_id: Option<String>,
+    #[validate(length(equal = 6), required)]
+    pub code_color: Option<String>,
+    #[validate(length(min = 3))]
+    pub name_color: Option<String>,
 }
 
 #[derive(Debug, AsChangeset, Serialize, Deserialize)]

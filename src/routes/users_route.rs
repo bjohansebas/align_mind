@@ -1,7 +1,9 @@
 use crate::jwt::UserToken;
 use crate::services::color_service::get_colors_with_user_uuid;
 use crate::services::place_service::get_places_with_user_uuid;
-use crate::services::think_service::get_thinks_with_user_uuid;
+use crate::services::think_service::{
+    get_archive_think, get_thinks_with_user_uuid, get_unarchive_think,
+};
 use crate::services::trash_service::get_trash_thinks_with_user_uuid;
 use crate::services::users_service::*;
 use crate::utils::responde_request::{response_api, response_api_data};
@@ -112,6 +114,36 @@ pub fn getting_trash_of_user(
     let result_trash: Result<Vec<TrashThink>, ResponseError> =
         get_trash_thinks_with_user_uuid(uid_user, connection);
     response_api_data(result_trash)
+}
+
+#[get("/<uid_user>/unarchives")]
+pub fn getting_unarchive_think(
+    uid_user: Uuid,
+    token: Result<UserToken, status::Custom<Json<Response>>>,
+) -> status::Custom<Json<Response>> {
+    if let Err(e) = token {
+        return e;
+    }
+
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_think: Result<Vec<Think>, ResponseError> = get_unarchive_think(uid_user, connection);
+    response_api_data(result_think)
+}
+
+#[get("/<uid_user>/archives")]
+pub fn getting_archive_think(
+    uid_user: Uuid,
+    token: Result<UserToken, status::Custom<Json<Response>>>,
+) -> status::Custom<Json<Response>> {
+    if let Err(e) = token {
+        return e;
+    }
+
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_think: Result<Vec<Think>, ResponseError> = get_archive_think(uid_user, connection);
+    response_api_data(result_think)
 }
 
 #[post("/<uid_user>/profile", format = "application/json", data = "<payload>")]

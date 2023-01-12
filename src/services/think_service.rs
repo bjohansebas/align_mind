@@ -42,8 +42,12 @@ pub fn get_think(uuid_think: Uuid, conn: &mut PgConnection) -> Result<Think, Res
         })
 }
 
-pub fn get_archive_think(conn: &mut PgConnection) -> Result<Vec<Think>, ResponseError> {
+pub fn get_archive_think(
+    uuid_user: Uuid,
+    conn: &mut PgConnection,
+) -> Result<Vec<Think>, ResponseError> {
     thinks::table
+        .filter(thinks::user_id.eq(uuid_user))
         .filter(thinks::is_archive.eq(true))
         .load::<Think>(conn)
         .map_err(|_| ResponseError {
@@ -52,8 +56,12 @@ pub fn get_archive_think(conn: &mut PgConnection) -> Result<Vec<Think>, Response
         })
 }
 
-pub fn get_unarchive_think(conn: &mut PgConnection) -> Result<Vec<Think>, ResponseError> {
+pub fn get_unarchive_think(
+    uuid_user: Uuid,
+    conn: &mut PgConnection,
+) -> Result<Vec<Think>, ResponseError> {
     thinks::table
+        .filter(thinks::user_id.eq(uuid_user))
         .filter(thinks::is_archive.eq(false))
         .load::<Think>(conn)
         .map_err(|_| ResponseError {
@@ -80,7 +88,7 @@ pub fn create_think(
 
     let result_place: Place = get_place(uuid_place.unwrap(), conn)?;
 
-    if result_place.user_id.eq(&uuid_user) {
+    if !result_place.user_id.eq(&uuid_user) {
         return Err(ResponseError {
             code: Status::BadRequest.code,
             message: "The place not own of user".to_string(),

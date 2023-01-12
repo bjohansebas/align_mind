@@ -21,7 +21,7 @@ mod utils;
 fn rocket() -> _ {
     let cors = CorsOptions {
         allowed_origins: AllowedOrigins::all(),
-        allowed_headers: AllowedHeaders::some(&["Authorization", "Accept","Content-Type"]),
+        allowed_headers: AllowedHeaders::some(&["Authorization", "Accept", "Content-Type"]),
         allowed_methods: vec![Method::Get, Method::Post, Method::Delete, Method::Put]
             .into_iter()
             .map(From::from)
@@ -42,6 +42,8 @@ fn rocket() -> _ {
                 getting_thinks_of_user,
                 getting_trash_of_user,
                 getting_colors_of_user,
+                getting_unarchive_think,
+                getting_archive_think,
                 save_profile,
                 updating_user,
                 update_profile_user,

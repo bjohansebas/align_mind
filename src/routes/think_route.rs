@@ -59,10 +59,10 @@ pub fn save_think(
     let connection: &mut PgConnection = &mut establish_connection();
 
     let data_think: NewThinkDTO = payload.into_inner().into_inner();
-    let result_action: Result<ResponseSuccess, ResponseError> =
+    let result_action: Result<Think, ResponseError> =
         create_think(uid_user, data_think, connection);
 
-    response_api(result_action)
+    response_api_data(result_action)
 }
 
 #[post("/<uid_think>/trash")]

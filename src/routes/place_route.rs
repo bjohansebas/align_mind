@@ -40,10 +40,10 @@ pub fn save_place(
 
     let connection: &mut PgConnection = &mut establish_connection();
 
-    let result_action: Result<ResponseSuccess, ResponseError> =
+    let result_action: Result<Place, ResponseError> =
         create_place(uid_user, payload.into_inner().into_inner(), connection);
 
-    response_api(result_action)
+    response_api_data(result_action)
 }
 
 #[put("/<uid_place>", format = "application/json", data = "<payload>")]

@@ -77,7 +77,7 @@ pub fn create_think(
     uuid_user: Uuid,
     payload: NewThinkDTO,
     conn: &mut PgConnection,
-) -> Result<ResponseSuccess, ResponseError> {
+) -> Result<Think, ResponseError> {
     get_user(uuid_user, conn)?;
 
     let uuid_place: Result<Uuid, uuid::Error> = Uuid::parse_str(payload.place_id.unwrap().as_str());
@@ -108,22 +108,18 @@ pub fn create_think(
         updated_at: Some(Utc::now().naive_utc()),
     };
 
-    let insert_action: bool = diesel::insert_into(thinks::table)
+    let insert_action = diesel::insert_into(thinks::table)
         .values(&think)
-        .execute(conn)
-        .is_ok();
+        .get_result(conn);
 
-    if !insert_action {
+    if insert_action.is_err() {
         return Err(ResponseError {
             code: Status::BadRequest.code,
             message: "Unknow error".to_string(),
         });
     }
 
-    Ok(ResponseSuccess {
-        message: "The think had been created".to_string(),
-        data: serde_json::to_value("").unwrap(),
-    })
+    Ok(insert_action.unwrap())
 }
 
 pub fn update_think(

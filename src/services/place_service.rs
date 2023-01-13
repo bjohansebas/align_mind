@@ -42,12 +42,34 @@ pub fn get_place(uuid_place: Uuid, conn: &mut PgConnection) -> Result<Place, Res
         })
 }
 
+pub fn get_place_with_text(
+    text: String,
+    uuid_user: Uuid,
+    conn: &mut PgConnection,
+) -> Result<Place, ResponseError> {
+    places::table
+        .filter(places::user_id.eq(uuid_user))
+        .filter(places::name_place.eq(text))
+        .first::<Place>(conn)
+        .map_err(|_| ResponseError {
+            code: Status::NotFound.code,
+            message: "The place not found".to_string(),
+        })
+}
+
 pub fn create_place(
     uuid_user: Uuid,
     payload: NewPlaceDTO,
     conn: &mut PgConnection,
-) -> Result<ResponseSuccess, ResponseError> {
+) -> Result<Place, ResponseError> {
     get_user(uuid_user, conn)?;
+
+    if get_place_with_text(payload.name_place.to_owned().unwrap(), uuid_user, conn).is_ok() {
+        return Err(ResponseError {
+            code: Status::Conflict.code,
+            message: "The place exist".to_string(),
+        });
+    }
 
     let result_color =
         get_color_by_code_and_user(uuid_user, payload.code_color.to_owned().unwrap(), conn);
@@ -77,22 +99,18 @@ pub fn create_place(
         color_id: result_color.color_id,
     };
 
-    let insert_action: bool = diesel::insert_into(places::table)
+    let insert_action = diesel::insert_into(places::table)
         .values(&place)
-        .execute(conn)
-        .is_ok();
+        .get_result(conn);
 
-    if !insert_action {
+    if insert_action.is_err() {
         return Err(ResponseError {
             code: Status::BadRequest.code,
             message: "Unknown Error".to_string(),
         });
     }
 
-    Ok(ResponseSuccess {
-        message: "The place has been created".to_string(),
-        data: serde_json::to_value("").unwrap(),
-    })
+    Ok(insert_action.unwrap())
 }
 
 pub fn update_place(

@@ -1,11 +1,14 @@
 use super::place_service::get_place;
+use super::think_emotion_service::get_think_emotions;
 use super::users_service::get_user;
 
+use align_mind_server::models::emotion_model::Emotion;
 use align_mind_server::models::place_model::Place;
 use align_mind_server::models::response_model::{ResponseError, ResponseSuccess};
+use align_mind_server::models::think_emotion_model::NewThinkTrashEmotion;
 use align_mind_server::models::think_model::*;
 use align_mind_server::models::user_model::User;
-use align_mind_server::schema::{thinks, trash_thinks};
+use align_mind_server::schema::{think_trash_emotions, thinks, trash_thinks};
 
 use chrono::{Datelike, NaiveDate, NaiveDateTime, Utc};
 use diesel::prelude::*;
@@ -82,7 +85,7 @@ pub fn create_think(
     if uuid_place.is_err() {
         return Err(ResponseError {
             code: Status::NotFound.code,
-            message: "The think not found".to_string(),
+            message: "The place not found".to_string(),
         });
     }
 
@@ -94,7 +97,9 @@ pub fn create_think(
             message: "The place not own of user".to_string(),
         });
     }
+
     let think: NewThink = NewThink {
+        think_id: Uuid::new_v4(),
         user_id: uuid_user,
         is_archive: Some(false),
         place_id: result_place.place_id,
@@ -186,6 +191,7 @@ pub fn move_think_to_trash(
         NaiveDate::from_ymd_opt(date_now.year(), date_now.month() + 1, date_now.day());
 
     let payload: NewTrashThink = NewTrashThink {
+        trash_th_id: result_think.think_id,
         text_think: result_think.text_think,
         user_id: result_think.user_id,
         place_id: result_think.place_id,
@@ -206,6 +212,28 @@ pub fn move_think_to_trash(
             message: "Unknown error".to_string(),
         });
     }
+
+    let emotions: Vec<Emotion> = get_think_emotions(uuid_think, conn)?;
+
+    for emotion in emotions.iter() {
+        let think_emotion_data: NewThinkTrashEmotion = NewThinkTrashEmotion {
+            emotion_id: emotion.emotion_id,
+            trash_th_id: uuid_think,
+        };
+
+        let insert_action: bool = diesel::insert_into(think_trash_emotions::table)
+            .values(&think_emotion_data)
+            .execute(conn)
+            .is_ok();
+
+        if !insert_action {
+            return Err(ResponseError {
+                code: Status::BadRequest.code,
+                message: "Unknow error".to_string(),
+            });
+        }
+    }
+
     delete_think(uuid_think, conn)?;
 
     Ok(ResponseSuccess {

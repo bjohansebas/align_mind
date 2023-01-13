@@ -1,3 +1,5 @@
+use super::color_service::get_color;
+
 use align_mind_server::models::color_model::Color;
 use align_mind_server::models::emotion_model::*;
 use align_mind_server::models::response_model::{ResponseError, ResponseSuccess};
@@ -8,12 +10,19 @@ use diesel::prelude::*;
 use rocket::http::Status;
 use uuid::Uuid;
 
-use super::color_service::get_color;
-
 pub fn get_emotion(uuid_emotion: Uuid, conn: &mut PgConnection) -> Result<Emotion, ResponseError> {
     emotions::table
         .filter(emotions::emotion_id.eq(uuid_emotion))
         .first::<Emotion>(conn)
+        .map_err(|_| ResponseError {
+            code: Status::NotFound.code,
+            message: "The emotion not found".to_string(),
+        })
+}
+
+pub fn get_all_emotion(conn: &mut PgConnection) -> Result<Vec<Emotion>, ResponseError> {
+    emotions::table
+        .load::<Emotion>(conn)
         .map_err(|_| ResponseError {
             code: Status::NotFound.code,
             message: "The emotion not found".to_string(),

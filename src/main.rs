@@ -61,17 +61,24 @@ fn rocket() -> _ {
         .mount(
             "/thinks",
             routes![
+                getting_think_emotions,
                 getting_think,
                 save_think,
-                deleting_think,
+                push_emotion,
                 updating_think,
-                move_to_trash
+                deleting_think,
+                deleting_emotion_think,
+                move_to_trash,
             ],
         )
-        .mount("/trash", routes![getting_trash, restore_think])
+        .mount(
+            "/trash",
+            routes![getting_trash, getting_trash_emotions, restore_think],
+        )
         .mount(
             "/emotions",
             routes![
+                getting_emotions,
                 getting_emotion,
                 save_emotion,
                 deleting_emotion,

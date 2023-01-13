@@ -1,8 +1,11 @@
 use super::users_service::get_user;
+
+use align_mind_server::models::emotion_model::Emotion;
 use align_mind_server::models::response_model::{ResponseError, ResponseSuccess};
+use align_mind_server::models::think_emotion_model::{NewThinkEmotion, ThinkTrashEmotion};
 use align_mind_server::models::think_model::*;
 use align_mind_server::models::user_model::User;
-use align_mind_server::schema::{thinks, trash_thinks};
+use align_mind_server::schema::{emotions, think_emotions, thinks, trash_thinks};
 
 use diesel::prelude::*;
 use diesel::result::Error;
@@ -41,6 +44,27 @@ pub fn get_trash_think(
         })
 }
 
+pub fn get_trash_emotions(
+    uuid_trash_think: Uuid,
+    conn: &mut PgConnection,
+) -> Result<Vec<Emotion>, ResponseError> {
+    let trash: TrashThink = get_trash_think(uuid_trash_think, conn)?;
+
+    let result_emotion: Result<Vec<Emotion>, Error> = ThinkTrashEmotion::belonging_to(&trash)
+        .inner_join(emotions::table)
+        .select(emotions::all_columns)
+        .load::<Emotion>(conn);
+
+    if result_emotion.is_err() {
+        return Err(ResponseError {
+            code: Status::BadRequest.code,
+            message: "Unknown error".to_string(),
+        });
+    }
+
+    Ok(result_emotion.unwrap())
+}
+
 pub fn remove_of_trash(
     uuid_trash_think: Uuid,
     conn: &mut PgConnection,
@@ -48,6 +72,7 @@ pub fn remove_of_trash(
     let result_trash: TrashThink = get_trash_think(uuid_trash_think, conn)?;
 
     let payload: NewThink = NewThink {
+        think_id: result_trash.trash_th_id,
         text_think: result_trash.text_think,
         user_id: result_trash.user_id,
         place_id: result_trash.place_id,
@@ -67,6 +92,28 @@ pub fn remove_of_trash(
             message: "Unknown error".to_string(),
         });
     }
+
+    let emotions: Vec<Emotion> = get_trash_emotions(uuid_trash_think, conn)?;
+
+    for emotion in emotions.iter() {
+        let think_emotion_data: NewThinkEmotion = NewThinkEmotion {
+            emotion_id: emotion.emotion_id,
+            think_id: uuid_trash_think,
+        };
+
+        let insert_action: bool = diesel::insert_into(think_emotions::table)
+            .values(&think_emotion_data)
+            .execute(conn)
+            .is_ok();
+
+        if !insert_action {
+            return Err(ResponseError {
+                code: Status::BadRequest.code,
+                message: "Unknow error".to_string(),
+            });
+        }
+    }
+
     delete_trash(uuid_trash_think, conn)?;
 
     Ok(ResponseSuccess {

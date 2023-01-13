@@ -4,6 +4,7 @@ use crate::schema::{think_emotions, think_trash_emotions};
 
 use diesel::prelude::*;
 use rocket::serde::{Deserialize, Serialize};
+use rocket_validation::Validate;
 use uuid::Uuid;
 
 #[derive(Queryable, Debug, Serialize, Deserialize, Identifiable, Associations, PartialEq, Eq)]
@@ -24,6 +25,12 @@ pub struct NewThinkEmotion {
     pub emotion_id: Uuid,
 }
 
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct NewThinkEmotionDTO {
+    #[validate(length(equal = 36), required)]
+    pub emotion_id: Option<String>,
+}
+
 #[derive(Queryable, Debug, Serialize, Deserialize, Identifiable, Associations, PartialEq, Eq)]
 #[diesel(belongs_to(TrashThink, foreign_key = trash_th_id))]
 #[diesel(belongs_to(Emotion, foreign_key = emotion_id))]
@@ -40,4 +47,10 @@ pub struct ThinkTrashEmotion {
 pub struct NewThinkTrashEmotion {
     pub trash_th_id: Uuid,
     pub emotion_id: Uuid,
+}
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct NewThinkTrashEmotionDTO {
+    #[validate(length(equal = 36), required)]
+    pub emotion_id: Option<String>,
 }

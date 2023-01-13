@@ -27,6 +27,7 @@ pub struct Think {
 #[derive(Insertable, Debug, Deserialize)]
 #[diesel(table_name = thinks)]
 pub struct NewThink {
+    pub think_id: Uuid,
     pub text_think: String,
     pub user_id: Uuid,
     pub place_id: Uuid,
@@ -77,6 +78,7 @@ pub struct TrashThink {
 #[derive(Insertable, Debug, Deserialize)]
 #[diesel(table_name = trash_thinks)]
 pub struct NewTrashThink {
+    pub trash_th_id: Uuid,
     pub text_think: String,
     pub user_id: Uuid,
     pub place_id: Uuid,

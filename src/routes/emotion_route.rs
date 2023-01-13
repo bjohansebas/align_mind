@@ -12,6 +12,20 @@ use rocket::serde::json::Json;
 use rocket::serde::uuid::Uuid;
 use rocket_validation::Validated;
 
+#[get("/")]
+pub fn getting_emotions(
+    token: Result<UserToken, status::Custom<Json<Response>>>,
+) -> status::Custom<Json<Response>> {
+    if let Err(e) = token {
+        return e;
+    }
+
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_emotion: Result<Vec<Emotion>, ResponseError> = get_all_emotion(connection);
+    response_api_data(result_emotion)
+}
+
 #[get("/<uid_emotion>")]
 pub fn getting_emotion(
     token: Result<UserToken, status::Custom<Json<Response>>>,

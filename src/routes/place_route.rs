@@ -4,9 +4,11 @@ use crate::services::place_service::*;
 use crate::utils::responde_request::{response_api, response_api_data};
 
 use align_mind_server::establish_connection;
+use align_mind_server::models::color_model::Color;
 use align_mind_server::models::place_model::*;
 use align_mind_server::models::response_model::{Response, ResponseError, ResponseSuccess};
 
+use align_mind_server::models::think_model::Think;
 use diesel::PgConnection;
 use rocket::response::status;
 use rocket::serde::json::Json;
@@ -25,6 +27,37 @@ pub fn getting_place(
     let connection: &mut PgConnection = &mut establish_connection();
 
     let result_place: Result<Place, ResponseError> = get_place(uid_place, connection);
+    response_api_data(result_place)
+}
+
+#[get("/<uid_place>/thinks")]
+pub fn getting_thinks_place(
+    token: Result<UserToken, status::Custom<Json<Response>>>,
+    uid_place: Uuid,
+) -> status::Custom<Json<Response>> {
+    if let Err(e) = token {
+        return e;
+    }
+
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_place: Result<Vec<Think>, ResponseError> = get_thinks_place(uid_place, connection);
+    response_api_data(result_place)
+}
+
+#[get("/<uid_place>/colors")]
+pub fn getting_colors_places(
+    token: Result<UserToken, status::Custom<Json<Response>>>,
+    uid_place: Uuid,
+) -> status::Custom<Json<Response>> {
+    if let Err(e) = token {
+        return e;
+    }
+
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_place: Result<Vec<Color>, ResponseError> =
+        get_color_places_with_user_uuid(uid_place, connection);
     response_api_data(result_place)
 }
 

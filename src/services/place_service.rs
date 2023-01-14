@@ -4,6 +4,7 @@ use super::users_service::get_user;
 use align_mind_server::models::color_model::{Color, NewColorDTO};
 use align_mind_server::models::place_model::*;
 use align_mind_server::models::response_model::{ResponseError, ResponseSuccess};
+use align_mind_server::models::think_model::Think;
 use align_mind_server::models::user_model::User;
 use align_mind_server::schema::places;
 
@@ -40,6 +41,42 @@ pub fn get_place(uuid_place: Uuid, conn: &mut PgConnection) -> Result<Place, Res
             code: Status::NotFound.code,
             message: "The place not found".to_string(),
         })
+}
+
+pub fn get_thinks_place(
+    uuid_place: Uuid,
+    conn: &mut PgConnection,
+) -> Result<Vec<Think>, ResponseError> {
+    let result_place: Place = get_place(uuid_place, conn)?;
+
+    let result_thinks: Result<Vec<Think>, Error> =
+        Think::belonging_to(&result_place).load::<Think>(conn);
+
+    if result_thinks.is_err() {
+        return Err(ResponseError {
+            code: Status::BadRequest.code,
+            message: "Unknown error".to_string(),
+        });
+    }
+
+    Ok(result_thinks.unwrap())
+}
+
+pub fn get_color_places_with_user_uuid(
+    uuid_user: Uuid,
+    conn: &mut PgConnection,
+) -> Result<Vec<Color>, ResponseError> {
+    get_user(uuid_user, conn)?;
+
+    let result_places: Vec<Place> = get_places_with_user_uuid(uuid_user, conn)?;
+    let mut colors_place: Vec<Color> = Vec::new();
+
+    for place in result_places.iter() {
+        let result_color: Color = get_color(place.color_id, conn)?;
+        colors_place.push(result_color)
+    }
+
+    Ok(colors_place)
 }
 
 pub fn get_place_with_text(

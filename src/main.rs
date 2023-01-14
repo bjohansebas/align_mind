@@ -56,7 +56,14 @@ fn rocket() -> _ {
         )
         .mount(
             "/places",
-            routes![getting_place, save_place, deleting_place, updating_place],
+            routes![
+                getting_place,
+                getting_colors_places,
+                getting_thinks_place,
+                save_place,
+                deleting_place,
+                updating_place
+            ],
         )
         .mount(
             "/thinks",

@@ -58,3 +58,18 @@ pub fn restore_think(
         remove_of_trash(uid_trash, connection);
     response_api(result_action)
 }
+
+#[delete("/<uid_trash>")]
+pub fn deleting_trash(
+    token: Result<UserToken, status::Custom<Json<Response>>>,
+    uid_trash: Uuid,
+) -> status::Custom<Json<Response>> {
+    if let Err(e) = token {
+        return e;
+    }
+
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_action: Result<ResponseSuccess, ResponseError> = delete_trash(uid_trash, connection);
+    response_api(result_action)
+}

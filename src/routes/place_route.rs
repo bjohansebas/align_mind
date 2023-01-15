@@ -8,7 +8,7 @@ use align_mind_server::models::color_model::Color;
 use align_mind_server::models::place_model::*;
 use align_mind_server::models::response_model::{Response, ResponseError, ResponseSuccess};
 
-use align_mind_server::models::think_model::Think;
+use align_mind_server::models::think_model::{Think, TrashThink};
 use diesel::PgConnection;
 use rocket::response::status;
 use rocket::serde::json::Json;
@@ -58,6 +58,38 @@ pub fn getting_colors_places(
 
     let result_place: Result<Vec<Color>, ResponseError> =
         get_color_places_with_user_uuid(uid_place, connection);
+    response_api_data(result_place)
+}
+
+#[get("/<uid_place>/thinks/archive")]
+pub fn getting_archive_places(
+    token: Result<UserToken, status::Custom<Json<Response>>>,
+    uid_place: Uuid,
+) -> status::Custom<Json<Response>> {
+    if let Err(e) = token {
+        return e;
+    }
+
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_place: Result<Vec<Think>, ResponseError> =
+        get_thinks_archive_place(uid_place, connection);
+    response_api_data(result_place)
+}
+
+#[get("/<uid_place>/trash")]
+pub fn getting_trash_places(
+    token: Result<UserToken, status::Custom<Json<Response>>>,
+    uid_place: Uuid,
+) -> status::Custom<Json<Response>> {
+    if let Err(e) = token {
+        return e;
+    }
+
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let result_place: Result<Vec<TrashThink>, ResponseError> =
+        get_thinks_trash_place(uid_place, connection);
     response_api_data(result_place)
 }
 

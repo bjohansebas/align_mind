@@ -4,9 +4,9 @@ use super::users_service::get_user;
 use align_mind_server::models::color_model::{Color, NewColorDTO};
 use align_mind_server::models::place_model::*;
 use align_mind_server::models::response_model::{ResponseError, ResponseSuccess};
-use align_mind_server::models::think_model::Think;
+use align_mind_server::models::think_model::{Think, TrashThink};
 use align_mind_server::models::user_model::User;
-use align_mind_server::schema::places;
+use align_mind_server::schema::{places, thinks};
 
 use chrono::Utc;
 use diesel::prelude::*;
@@ -49,8 +49,48 @@ pub fn get_thinks_place(
 ) -> Result<Vec<Think>, ResponseError> {
     let result_place: Place = get_place(uuid_place, conn)?;
 
-    let result_thinks: Result<Vec<Think>, Error> =
-        Think::belonging_to(&result_place).load::<Think>(conn);
+    let result_thinks: Result<Vec<Think>, Error> = Think::belonging_to(&result_place)
+        .filter(thinks::is_archive.eq(false))
+        .load::<Think>(conn);
+
+    if result_thinks.is_err() {
+        return Err(ResponseError {
+            code: Status::BadRequest.code,
+            message: "Unknown error".to_string(),
+        });
+    }
+
+    Ok(result_thinks.unwrap())
+}
+
+pub fn get_thinks_archive_place(
+    uuid_place: Uuid,
+    conn: &mut PgConnection,
+) -> Result<Vec<Think>, ResponseError> {
+    let result_place: Place = get_place(uuid_place, conn)?;
+
+    let result_thinks: Result<Vec<Think>, Error> = Think::belonging_to(&result_place)
+        .filter(thinks::is_archive.eq(true))
+        .load::<Think>(conn);
+
+    if result_thinks.is_err() {
+        return Err(ResponseError {
+            code: Status::BadRequest.code,
+            message: "Unknown error".to_string(),
+        });
+    }
+
+    Ok(result_thinks.unwrap())
+}
+
+pub fn get_thinks_trash_place(
+    uuid_place: Uuid,
+    conn: &mut PgConnection,
+) -> Result<Vec<TrashThink>, ResponseError> {
+    let result_place: Place = get_place(uuid_place, conn)?;
+
+    let result_thinks: Result<Vec<TrashThink>, Error> =
+        TrashThink::belonging_to(&result_place).load::<TrashThink>(conn);
 
     if result_thinks.is_err() {
         return Err(ResponseError {

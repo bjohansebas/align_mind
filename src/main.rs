@@ -60,6 +60,8 @@ fn rocket() -> _ {
                 getting_place,
                 getting_colors_places,
                 getting_thinks_place,
+                getting_archive_places,
+                getting_trash_places,
                 save_place,
                 deleting_place,
                 updating_place
@@ -80,7 +82,12 @@ fn rocket() -> _ {
         )
         .mount(
             "/trash",
-            routes![getting_trash, getting_trash_emotions, restore_think],
+            routes![
+                getting_trash,
+                getting_trash_emotions,
+                restore_think,
+                deleting_trash
+            ],
         )
         .mount(
             "/emotions",

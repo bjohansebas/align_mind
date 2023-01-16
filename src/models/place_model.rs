@@ -36,8 +36,6 @@ pub struct NewPlaceDTO {
     pub name_place: Option<String>,
     #[validate(length(equal = 6), required)]
     pub code_color: Option<String>,
-    #[validate(length(min = 3))]
-    pub name_color: Option<String>,
 }
 
 #[derive(Debug, AsChangeset, Serialize, Deserialize)]
@@ -50,8 +48,8 @@ pub struct UpdatePlace {
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct UpdatePlaceDTO {
-    #[validate(length(min = 5))]
+    #[validate(length(min = 5, max = 30))]
     pub name_place: Option<String>,
-    #[validate(length(equal = 36))]
-    pub color_id: Option<String>,
+    #[validate(length(equal = 6))]
+    pub code_color: Option<String>,
 }

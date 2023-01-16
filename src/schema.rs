@@ -3,7 +3,6 @@
 diesel::table! {
     colors (color_id) {
         color_id -> Uuid,
-        name_color -> Varchar,
         code_color -> Varchar,
         created_at -> Timestamp,
         updated_at -> Timestamp,

@@ -65,7 +65,6 @@ pub fn create_color(
     let color: NewColor = NewColor {
         user_id: user_uuid,
         code_color: payload.code_color.unwrap(),
-        name_color: payload.name_color.unwrap(),
     };
 
     let insert_action = diesel::insert_into(colors::table)
@@ -95,7 +94,6 @@ pub fn update_color(
 
     let data_color: UpdateColor = UpdateColor {
         code_color: payload.code_color,
-        name_color: payload.name_color,
         updated_at: Some(Utc::now().naive_utc()),
     };
 

@@ -150,22 +150,15 @@ pub fn create_place(
 
     let result_color =
         get_color_by_code_and_user(uuid_user, payload.code_color.to_owned().unwrap(), conn);
+        
     if result_color.is_err() {
-        if let Some(name_color) = payload.name_color {
-            let _result = create_color(
-                uuid_user,
-                NewColorDTO {
-                    code_color: payload.code_color.to_owned(),
-                    name_color: Some(name_color),
-                },
-                conn,
-            )?;
-        } else {
-            return Err(ResponseError {
-                code: Status::BadRequest.code,
-                message: "Name color is required for created new color".to_string(),
-            });
-        }
+        let _result = create_color(
+            uuid_user,
+            NewColorDTO {
+                code_color: payload.code_color.to_owned(),
+            },
+            conn,
+        )?;
     }
     let result_color: Color =
         get_color_by_code_and_user(uuid_user, payload.code_color.to_owned().unwrap(), conn)?;
@@ -203,23 +196,25 @@ pub fn update_place(
         updated_at: Some(Utc::now().naive_utc()),
     };
 
-    if let Some(color_id) = payload.color_id {
-        let uuid_color: Result<Uuid, uuid::Error> = Uuid::parse_str(color_id.as_str());
+    if let Some(code_color) = payload.code_color {
+        let result_color = get_color_by_code_and_user(
+            result_place.user_id.to_owned(),
+            code_color.to_owned(),
+            conn,
+        );
 
-        if uuid_color.is_err() {
-            return Err(ResponseError {
-                code: Status::NotFound.code,
-                message: "The color not found".to_string(),
-            });
+        if result_color.is_err() {
+            let _result = create_color(
+                result_place.user_id.to_owned(),
+                NewColorDTO {
+                    code_color: Some(code_color.to_owned()),
+                },
+                conn,
+            )?;
         }
+        let result_color: Color =
+            get_color_by_code_and_user(result_place.user_id, code_color.to_owned(), conn)?;
 
-        let result_color: Color = get_color(uuid_color.unwrap(), conn)?;
-        if !result_color.user_id.eq(&Some(result_place.user_id)) {
-            return Err(ResponseError {
-                code: Status::BadRequest.code,
-                message: "The color not own of user".to_string(),
-            });
-        }
         data_place.color_id = Some(result_color.color_id);
     }
 

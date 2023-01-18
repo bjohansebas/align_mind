@@ -8,6 +8,7 @@ use routes::auth_route::*;
 use routes::color_route::*;
 use routes::emotion_route::*;
 use routes::place_route::*;
+use routes::statistics_route::*;
 use routes::think_route::*;
 use routes::trash_route::*;
 use routes::users_route::*;
@@ -97,6 +98,15 @@ fn rocket() -> _ {
                 save_emotion,
                 deleting_emotion,
                 updating_emotion
+            ],
+        )
+        .mount(
+            "/statistics",
+            routes![
+                getting_positive_and_negative,
+                getting_filter_all,
+                getting_negative,
+                getting_positive
             ],
         )
         .attach(cors.unwrap())

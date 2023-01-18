@@ -150,7 +150,7 @@ pub fn create_place(
 
     let result_color =
         get_color_by_code_and_user(uuid_user, payload.code_color.to_owned().unwrap(), conn);
-        
+
     if result_color.is_err() {
         let _result = create_color(
             uuid_user,
@@ -213,7 +213,7 @@ pub fn update_place(
             )?;
         }
         let result_color: Color =
-            get_color_by_code_and_user(result_place.user_id, code_color.to_owned(), conn)?;
+            get_color_by_code_and_user(result_place.user_id, code_color, conn)?;
 
         data_place.color_id = Some(result_color.color_id);
     }

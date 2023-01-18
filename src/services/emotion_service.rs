@@ -20,6 +20,19 @@ pub fn get_emotion(uuid_emotion: Uuid, conn: &mut PgConnection) -> Result<Emotio
         })
 }
 
+pub fn get_emotion_with_textt(
+    text_emotion: String,
+    conn: &mut PgConnection,
+) -> Result<Emotion, ResponseError> {
+    emotions::table
+        .filter(emotions::name_emotion.eq(text_emotion))
+        .first::<Emotion>(conn)
+        .map_err(|_| ResponseError {
+            code: Status::NotFound.code,
+            message: "The emotion not found".to_string(),
+        })
+}
+
 pub fn get_all_emotion(conn: &mut PgConnection) -> Result<Vec<Emotion>, ResponseError> {
     emotions::table
         .load::<Emotion>(conn)
@@ -33,6 +46,16 @@ pub fn create_emotion(
     payload: NewEmotionDTO,
     conn: &mut PgConnection,
 ) -> Result<ResponseSuccess, ResponseError> {
+    let result_emotion: Result<Emotion, ResponseError> =
+        get_emotion_with_textt(payload.name_emotion.to_owned().unwrap(), conn);
+
+    if result_emotion.is_ok() {
+        return Err(ResponseError {
+            code: Status::Conflict.code,
+            message: "The emotion was already created".to_string(),
+        });
+    }
+
     let uuid_color: Result<Uuid, uuid::Error> = Uuid::parse_str(payload.color_id.unwrap().as_str());
 
     if uuid_color.is_err() {
@@ -46,6 +69,7 @@ pub fn create_emotion(
 
     let emotion: NewEmotion = NewEmotion {
         color_id: result_color.color_id,
+        type_emotion: payload.type_emotion.unwrap(),
         name_emotion: payload.name_emotion.unwrap(),
     };
 
@@ -76,6 +100,7 @@ pub fn update_emotion(
 
     let mut data_emotion: UpdateEmotion = UpdateEmotion {
         name_emotion: payload.name_emotion,
+        type_emotion: payload.type_emotion,
         color_id: None,
         updated_at: Some(Utc::now().naive_utc()),
     };

@@ -3,6 +3,7 @@ pub mod color_model;
 pub mod emotion_model;
 pub mod place_model;
 pub mod response_model;
+pub mod statistics_model;
 pub mod think_emotion_model;
 pub mod think_model;
 pub mod user_model;

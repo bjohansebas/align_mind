@@ -17,12 +17,14 @@ pub struct Emotion {
     pub color_id: Uuid,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
+    pub type_emotion: String,
 }
 
 #[derive(Insertable, Debug, Deserialize)]
 #[diesel(table_name = emotions)]
 pub struct NewEmotion {
     pub name_emotion: String,
+    pub type_emotion: String,
     pub color_id: Uuid,
 }
 
@@ -32,12 +34,15 @@ pub struct NewEmotionDTO {
     pub name_emotion: Option<String>,
     #[validate(length(equal = 36), required)]
     pub color_id: Option<String>,
+    #[validate(length(equal = 8), required)]
+    pub type_emotion: Option<String>,
 }
 
 #[derive(Debug, AsChangeset, Serialize, Deserialize)]
 #[diesel(table_name = emotions)]
 pub struct UpdateEmotion {
     pub name_emotion: Option<String>,
+    pub type_emotion: Option<String>,
     pub color_id: Option<Uuid>,
     pub updated_at: Option<NaiveDateTime>,
 }
@@ -48,4 +53,6 @@ pub struct UpdateEmotionDTO {
     pub name_emotion: Option<String>,
     #[validate(length(equal = 36))]
     pub color_id: Option<String>,
+    #[validate(length(equal = 8))]
+    pub type_emotion: Option<String>,
 }

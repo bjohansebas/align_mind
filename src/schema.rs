@@ -17,6 +17,7 @@ diesel::table! {
         color_id -> Uuid,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        type_emotion -> Varchar,
     }
 }
 

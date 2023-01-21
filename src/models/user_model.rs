@@ -54,10 +54,16 @@ pub struct UpdateUser {
 pub struct UpdateUserDTO {
     #[validate(length(min = 5, max = 20))]
     pub username: Option<String>,
-    #[validate(length(min = 8, max = 30))]
-    pub password: Option<String>,
     #[validate(email)]
     pub email: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct UpdatePasswordDTO {
+    #[validate(length(min = 8, max = 30), required)]
+    pub password: Option<String>,
+    #[validate(length(min = 8, max = 30), required)]
+    pub new_password: Option<String>,
 }
 
 #[derive(Queryable, Debug, Serialize, Deserialize, Identifiable, Associations, PartialEq, Eq)]

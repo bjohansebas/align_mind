@@ -197,6 +197,27 @@ pub fn update_profile_user(
     response_api(action)
 }
 
+#[put(
+    "/<uid_user>/password",
+    format = "application/json",
+    data = "<payload>"
+)]
+pub fn update_password_user(
+    token: Result<UserToken, status::Custom<Json<Response>>>,
+    uid_user: Uuid,
+    payload: Validated<Json<UpdatePasswordDTO>>,
+) -> status::Custom<Json<Response>> {
+    if let Err(e) = token {
+        return e;
+    }
+
+    let connection: &mut PgConnection = &mut establish_connection();
+
+    let action: Result<ResponseSuccess, ResponseError> =
+        update_password(uid_user, payload.into_inner().into_inner(), connection);
+    response_api(action)
+}
+
 #[delete("/<uid_user>")]
 pub fn delete_account(
     token: Result<UserToken, status::Custom<Json<Response>>>,

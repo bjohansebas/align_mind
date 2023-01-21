@@ -48,6 +48,7 @@ fn rocket() -> _ {
                 save_profile,
                 updating_user,
                 update_profile_user,
+                update_password_user,
                 delete_account,
             ],
         )

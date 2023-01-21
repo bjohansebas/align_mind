@@ -3,7 +3,7 @@ use align_mind_server::models::response_model::{ResponseError, ResponseSuccess};
 use align_mind_server::models::user_model::*;
 use align_mind_server::schema::{profile_users, users};
 
-use bcrypt::{hash, DEFAULT_COST};
+use bcrypt::{hash, verify, DEFAULT_COST};
 use chrono::Utc;
 use diesel::prelude::*;
 use rocket::http::Status;
@@ -133,19 +133,13 @@ pub fn update_user(
         }
     }
 
-    let mut data_user: UpdateUser = UpdateUser {
+    let data_user: UpdateUser = UpdateUser {
         username: payload.username,
         email: payload.email,
-        password: payload.password.to_owned(),
+        password: None,
         updated_at: Some(Utc::now().naive_utc()),
         changed_password_at: None,
     };
-
-    if let Some(password) = &payload.password {
-        let hash_password: String = hash(password, DEFAULT_COST).unwrap();
-        data_user.password = Some(hash_password);
-        data_user.changed_password_at = Some(Utc::now().naive_utc())
-    }
 
     let update_action: bool = diesel::update(&result_user)
         .set(&data_user)
@@ -160,7 +154,7 @@ pub fn update_user(
     }
 
     Ok(ResponseSuccess {
-        message: "".to_string(),
+        message: "Account has been updated".to_string(),
         data: serde_json::to_value("").unwrap(),
     })
 }
@@ -196,6 +190,55 @@ pub fn update_profile(
 
     Ok(ResponseSuccess {
         message: "successful profile update".to_string(),
+        data: serde_json::to_value("").unwrap(),
+    })
+}
+
+pub fn update_password(
+    uuid_user: Uuid,
+    payload: UpdatePasswordDTO,
+    conn: &mut PgConnection,
+) -> Result<ResponseSuccess, ResponseError> {
+    let result_user: User = get_user(uuid_user, conn)?;
+
+    let valid_password: bool =
+        verify(payload.password.to_owned().unwrap(), &result_user.password).unwrap();
+
+    if !valid_password {
+        return Err(ResponseError {
+            code: Status::BadRequest.code,
+            message: "The password not match".to_string(),
+        });
+    }
+
+    let mut data_user: UpdateUser = UpdateUser {
+        username: None,
+        email: None,
+        password: payload.new_password.to_owned(),
+        updated_at: Some(Utc::now().naive_utc()),
+        changed_password_at: None,
+    };
+
+    if let Some(password) = &payload.new_password {
+        let hash_password: String = hash(password, DEFAULT_COST).unwrap();
+        data_user.password = Some(hash_password);
+        data_user.changed_password_at = Some(Utc::now().naive_utc())
+    }
+
+    let update_action: bool = diesel::update(&result_user)
+        .set(&data_user)
+        .execute(conn)
+        .is_ok();
+
+    if !update_action {
+        return Err(ResponseError {
+            code: Status::BadRequest.code,
+            message: "Unknown Error".to_string(),
+        });
+    }
+
+    Ok(ResponseSuccess {
+        message: "The password has been updated".to_string(),
         data: serde_json::to_value("").unwrap(),
     })
 }

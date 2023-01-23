@@ -38,7 +38,7 @@ pub struct NewThink {
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct NewThinkDTO {
-    #[validate(length(min = 5), required)]
+    #[validate(length(min = 5, max = 1000), required)]
     pub text_think: Option<String>,
     #[validate(length(equal = 36), required)]
     pub place_id: Option<String>,
@@ -54,7 +54,7 @@ pub struct UpdateThink {
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct UpdateThinkDTO {
-    #[validate(length(min = 5))]
+    #[validate(length(min = 5, max = 1000))]
     pub text_think: Option<String>,
     pub is_archive: Option<bool>,
 }

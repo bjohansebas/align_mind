@@ -15,7 +15,7 @@ use rocket::serde::json::Json;
 use rocket::serde::{Deserialize, Serialize};
 use std::env;
 
-static ONE_WEEK: i64 = 60 * 60 * 24 * 7;
+static ONE_WEEK: i64 = 60 * 60 * 24;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserToken {

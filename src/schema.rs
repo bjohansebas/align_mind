@@ -91,7 +91,6 @@ diesel::table! {
 diesel::table! {
     users (user_id) {
         user_id -> Uuid,
-        username -> Varchar,
         password -> Varchar,
         changed_password_at -> Timestamp,
         email -> Varchar,

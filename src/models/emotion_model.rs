@@ -12,11 +12,17 @@ use uuid::Uuid;
 #[diesel(table_name = emotions)]
 #[diesel(primary_key(emotion_id))]
 pub struct Emotion {
+    #[serde(rename = "id")]
     pub emotion_id: Uuid,
+    #[serde(rename = "name")]
     pub name_emotion: String,
+    #[serde(rename = "color")]
     pub color_id: Uuid,
+    #[serde(rename = "createdAt")]
     pub created_at: NaiveDateTime,
+    #[serde(rename = "updatedAt")]
     pub updated_at: NaiveDateTime,
+    #[serde(rename = "type")]
     pub type_emotion: String,
 }
 
@@ -30,10 +36,13 @@ pub struct NewEmotion {
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct NewEmotionDTO {
-    #[validate(length(min = 5, max = 20), required)]
+    #[serde(rename = "name")]
+    #[validate(length(min = 3, max = 20), required)]
     pub name_emotion: Option<String>,
+    #[serde(rename = "colorId")]
     #[validate(length(equal = 36), required)]
     pub color_id: Option<String>,
+    #[serde(rename = "type")]
     #[validate(length(equal = 8), required)]
     pub type_emotion: Option<String>,
 }
@@ -49,10 +58,13 @@ pub struct UpdateEmotion {
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct UpdateEmotionDTO {
-    #[validate(length(min = 5, max = 20))]
+    #[serde(rename = "name")]
+    #[validate(length(min = 3, max = 20))]
     pub name_emotion: Option<String>,
+    #[serde(rename = "colorId")]
     #[validate(length(equal = 36))]
     pub color_id: Option<String>,
+    #[serde(rename = "type")]
     #[validate(length(equal = 8))]
     pub type_emotion: Option<String>,
 }

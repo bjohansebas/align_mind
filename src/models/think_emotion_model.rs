@@ -13,8 +13,11 @@ use uuid::Uuid;
 #[diesel(table_name = think_emotions)]
 #[diesel(primary_key(think_emotion_id))]
 pub struct ThinkEmotion {
+    #[serde(rename = "id")]
     pub think_emotion_id: Uuid,
+    #[serde(rename = "thinkId")]
     pub think_id: Uuid,
+    #[serde(rename = "emotionId")]
     pub emotion_id: Uuid,
 }
 
@@ -27,6 +30,7 @@ pub struct NewThinkEmotion {
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct NewThinkEmotionDTO {
+    #[serde(rename = "emotionId")]
     #[validate(length(equal = 36), required)]
     pub emotion_id: Option<String>,
 }
@@ -37,8 +41,11 @@ pub struct NewThinkEmotionDTO {
 #[diesel(table_name = think_trash_emotions)]
 #[diesel(primary_key(think_trash_emotion_id))]
 pub struct ThinkTrashEmotion {
+    #[serde(rename = "id")]
     pub think_trash_emotion_id: Uuid,
+    #[serde(rename = "trashId")]
     pub trash_th_id: Uuid,
+    #[serde(rename = "emotionId")]
     pub emotion_id: Uuid,
 }
 
@@ -51,6 +58,7 @@ pub struct NewThinkTrashEmotion {
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct NewThinkTrashEmotionDTO {
+    #[serde(rename = "emotionId")]
     #[validate(length(equal = 36), required)]
     pub emotion_id: Option<String>,
 }

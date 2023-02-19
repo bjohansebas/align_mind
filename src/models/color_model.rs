@@ -12,10 +12,15 @@ use uuid::Uuid;
 #[diesel(table_name = colors)]
 #[diesel(primary_key(color_id))]
 pub struct Color {
+    #[serde(rename = "id")]
     pub color_id: Uuid,
+    #[serde(rename = "code")]
     pub code_color: String,
+    #[serde(rename = "createdAt")]
     pub created_at: NaiveDateTime,
+    #[serde(rename = "updatedAt")]
     pub updated_at: NaiveDateTime,
+    #[serde(rename = "userId")]
     pub user_id: Option<Uuid>,
 }
 
@@ -28,6 +33,7 @@ pub struct NewColor {
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct NewColorDTO {
+    #[serde(rename = "code")]
     #[validate(length(equal = 6), required)]
     pub code_color: Option<String>,
 }
@@ -41,6 +47,7 @@ pub struct UpdateColor {
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct UpdateColorDTO {
-    #[validate(length(equal = 6))]
+    #[serde(rename = "code")]
+    #[validate(length(equal = 6), required)]
     pub code_color: Option<String>,
 }

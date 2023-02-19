@@ -1,13 +1,13 @@
 use rocket::serde::{Deserialize, Serialize};
 use rocket_validation::Validate;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Login {
     pub email: String,
     pub password: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate)]
 pub struct LoginDTO {
     #[validate(email, required)]
     pub email: Option<String>,
@@ -19,5 +19,6 @@ pub struct LoginDTO {
 pub struct LoginInfo {
     pub id: String,
     pub email: String,
+    #[serde(rename = "loginSession")]
     pub login_session: String,
 }

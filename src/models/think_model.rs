@@ -15,12 +15,19 @@ use uuid::Uuid;
 #[diesel(table_name = thinks)]
 #[diesel(primary_key(think_id))]
 pub struct Think {
+    #[serde(rename = "id")]
     pub think_id: Uuid,
+    #[serde(rename = "text")]
     pub text_think: String,
+    #[serde(rename = "userId")]
     pub user_id: Uuid,
+    #[serde(rename = "placeId")]
     pub place_id: Uuid,
+    #[serde(rename = "isArchive")]
     pub is_archive: bool,
+    #[serde(rename = "createdAt")]
     pub created_at: NaiveDateTime,
+    #[serde(rename = "updatedAt")]
     pub updated_at: NaiveDateTime,
 }
 
@@ -38,8 +45,10 @@ pub struct NewThink {
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct NewThinkDTO {
+    #[serde(rename = "text")]
     #[validate(length(min = 5, max = 1000), required)]
     pub text_think: Option<String>,
+    #[serde(rename = "placeId")]
     #[validate(length(equal = 36), required)]
     pub place_id: Option<String>,
 }
@@ -54,8 +63,10 @@ pub struct UpdateThink {
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct UpdateThinkDTO {
+    #[serde(rename = "text")]
     #[validate(length(min = 5, max = 1000))]
     pub text_think: Option<String>,
+    #[serde(rename = "isArchive")]
     pub is_archive: Option<bool>,
 }
 

@@ -14,11 +14,17 @@ use uuid::Uuid;
 #[diesel(table_name = places)]
 #[diesel(primary_key(place_id))]
 pub struct Place {
+    #[serde(rename = "id")]
     pub place_id: Uuid,
+    #[serde(rename = "name")]
     pub name_place: String,
+    #[serde(rename = "createdAt")]
     pub created_at: NaiveDateTime,
+    #[serde(rename = "updatedAt")]
     pub updated_at: NaiveDateTime,
+    #[serde(rename = "color")]
     pub color_id: Uuid,
+    #[serde(rename = "user")]
     pub user_id: Uuid,
 }
 
@@ -32,9 +38,11 @@ pub struct NewPlace {
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct NewPlaceDTO {
-    #[validate(length(min = 5, max = 30), required)]
+    #[validate(length(min = 2, max = 30), required)]
+    #[serde(rename = "name")]
     pub name_place: Option<String>,
     #[validate(length(equal = 6), required)]
+    #[serde(rename = "codeColor")]
     pub code_color: Option<String>,
 }
 
@@ -48,8 +56,10 @@ pub struct UpdatePlace {
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct UpdatePlaceDTO {
-    #[validate(length(min = 5, max = 30))]
+    #[validate(length(min = 2, max = 30))]
+    #[serde(rename = "name")]
     pub name_place: Option<String>,
     #[validate(length(equal = 6))]
+    #[serde(rename = "codeColor")]
     pub code_color: Option<String>,
 }

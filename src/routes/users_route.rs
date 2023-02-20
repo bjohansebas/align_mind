@@ -6,230 +6,234 @@ use crate::services::think_service::{
 };
 use crate::services::trash_service::get_trash_thinks_with_user_uuid;
 use crate::services::users_service::*;
-use crate::utils::responde_request::{response_api, response_api_data};
+use crate::utils::responde_request::{response_message_api, response_value_api};
 
 use align_mind_server::establish_connection;
 use align_mind_server::models::color_model::Color;
 use align_mind_server::models::place_model::Place;
-use align_mind_server::models::response_model::{Response, ResponseError, ResponseSuccess};
+use align_mind_server::models::response_model::{ResponseMessage, ResponseValue};
 use align_mind_server::models::think_model::{Think, TrashThink};
 use align_mind_server::models::user_model::*;
 
 use diesel::PgConnection;
 use rocket::response::status;
 use rocket::serde::json::Json;
-use rocket::serde::uuid::Uuid;
 use rocket_validation::Validated;
+use serde_json::Value;
 
-#[get("/<uid_user>")]
+#[get("/account", format = "application/json")]
 pub fn getting_user(
-    token: Result<UserToken, status::Custom<Json<Response>>>,
-    uid_user: Uuid,
-) -> status::Custom<Json<Response>> {
-    if let Err(e) = token {
-        return e;
-    }
+    token: Result<UserToken, status::Custom<Json<ResponseMessage>>>,
+) -> Result<status::Custom<Json<Value>>, status::Custom<Json<ResponseMessage>>> {
+    let token: UserToken = token?;
 
     let connection: &mut PgConnection = &mut establish_connection();
 
-    let result_user: Result<User, ResponseError> = get_user(uid_user, connection);
-    response_api_data(result_user)
+    let result_user: Result<ResponseValue<User>, ResponseMessage> =
+        get_user_account(token.sub, connection);
+
+    Ok(response_value_api(result_user))
 }
 
-#[get("/<uid_user>/profile")]
+#[get("/profile", format = "application/json")]
 pub fn getting_profile(
-    token: Result<UserToken, status::Custom<Json<Response>>>,
-    uid_user: Uuid,
-) -> status::Custom<Json<Response>> {
-    if let Err(e) = token {
-        return e;
-    }
+    token: Result<UserToken, status::Custom<Json<ResponseMessage>>>,
+) -> Result<status::Custom<Json<Value>>, status::Custom<Json<ResponseMessage>>> {
+    let token: UserToken = token?;
 
     let connection: &mut PgConnection = &mut establish_connection();
 
-    let result_profile: Result<ProfileUser, ResponseError> = get_user_profile(uid_user, connection);
-    response_api_data(result_profile)
+    let result_profile: Result<ResponseValue<ProfileUser>, ResponseMessage> =
+        get_user_profile(token.sub, connection);
+
+    Ok(response_value_api(result_profile))
 }
 
-#[get("/<uid_user>/places")]
+#[get("/places")]
 pub fn getting_places_of_user(
-    token: Result<UserToken, status::Custom<Json<Response>>>,
-    uid_user: Uuid,
-) -> status::Custom<Json<Response>> {
+    token: Result<UserToken, status::Custom<Json<ResponseMessage>>>,
+) -> Result<status::Custom<Json<Value>>, status::Custom<Json<ResponseMessage>>> {
     if let Err(e) = token {
-        return e;
+        return Err(e);
     }
 
     let connection: &mut PgConnection = &mut establish_connection();
 
-    let result_place: Result<Vec<Place>, ResponseError> =
-        get_places_with_user_uuid(uid_user, connection);
+    let result_place: Result<ResponseValue<Vec<Place>>, ResponseMessage> =
+        get_places_with_user_uuid(token.unwrap().sub, connection);
 
-    response_api_data(result_place)
+    Ok(response_value_api(result_place))
 }
 
-#[get("/<uid_user>/colors")]
+#[get("/colors")]
 pub fn getting_colors_of_user(
-    token: Result<UserToken, status::Custom<Json<Response>>>,
-    uid_user: Uuid,
-) -> status::Custom<Json<Response>> {
+    token: Result<UserToken, status::Custom<Json<ResponseMessage>>>,
+) -> Result<status::Custom<Json<Value>>, status::Custom<Json<ResponseMessage>>> {
     if let Err(e) = token {
-        return e;
+        return Err(e);
     }
 
     let connection: &mut PgConnection = &mut establish_connection();
 
-    let result_color: Result<Vec<Color>, ResponseError> =
-        get_colors_with_user_uuid(uid_user, connection);
-    response_api_data(result_color)
+    let result_color: Result<ResponseValue<Vec<Color>>, ResponseMessage> =
+        get_colors_with_user_uuid(token.unwrap().sub, connection);
+
+    Ok(response_value_api(result_color))
 }
 
-#[get("/<uid_user>/thinks")]
+#[get("/thinks")]
 pub fn getting_thinks_of_user(
-    token: Result<UserToken, status::Custom<Json<Response>>>,
-    uid_user: Uuid,
-) -> status::Custom<Json<Response>> {
+    token: Result<UserToken, status::Custom<Json<ResponseMessage>>>,
+) -> Result<status::Custom<Json<Value>>, status::Custom<Json<ResponseMessage>>> {
     if let Err(e) = token {
-        return e;
+        return Err(e);
     }
 
     let connection: &mut PgConnection = &mut establish_connection();
 
-    let result_think: Result<Vec<Think>, ResponseError> =
-        get_thinks_with_user_uuid(uid_user, connection);
-    response_api_data(result_think)
+    let result_think: Result<ResponseValue<Vec<Think>>, ResponseMessage> =
+        get_thinks_with_user_uuid(token.unwrap().sub, connection);
+
+    Ok(response_value_api(result_think))
 }
 
-#[get("/<uid_user>/trash")]
+#[get("/trash")]
 pub fn getting_trash_of_user(
-    token: Result<UserToken, status::Custom<Json<Response>>>,
-    uid_user: Uuid,
-) -> status::Custom<Json<Response>> {
+    token: Result<UserToken, status::Custom<Json<ResponseMessage>>>,
+) -> Result<status::Custom<Json<Value>>, status::Custom<Json<ResponseMessage>>> {
     if let Err(e) = token {
-        return e;
+        return Err(e);
     }
 
     let connection: &mut PgConnection = &mut establish_connection();
 
-    let result_trash: Result<Vec<TrashThink>, ResponseError> =
-        get_trash_thinks_with_user_uuid(uid_user, connection);
-    response_api_data(result_trash)
+    let result_trash: Result<ResponseValue<Vec<TrashThink>>, ResponseMessage> =
+        get_trash_thinks_with_user_uuid(token.unwrap().sub, connection);
+
+    Ok(response_value_api(result_trash))
 }
 
-#[get("/<uid_user>/unarchives")]
+#[get("/unarchives")]
 pub fn getting_unarchive_think(
-    uid_user: Uuid,
-    token: Result<UserToken, status::Custom<Json<Response>>>,
-) -> status::Custom<Json<Response>> {
+    token: Result<UserToken, status::Custom<Json<ResponseMessage>>>,
+) -> Result<status::Custom<Json<Value>>, status::Custom<Json<ResponseMessage>>> {
     if let Err(e) = token {
-        return e;
+        return Err(e);
     }
 
     let connection: &mut PgConnection = &mut establish_connection();
 
-    let result_think: Result<Vec<Think>, ResponseError> = get_unarchive_think(uid_user, connection);
-    response_api_data(result_think)
+    let result_think: Result<ResponseValue<Vec<Think>>, ResponseMessage> =
+        get_unarchive_think(token.unwrap().sub, connection);
+
+    Ok(response_value_api(result_think))
 }
 
-#[get("/<uid_user>/archives")]
+#[get("/archives")]
 pub fn getting_archive_think(
-    uid_user: Uuid,
-    token: Result<UserToken, status::Custom<Json<Response>>>,
-) -> status::Custom<Json<Response>> {
+    token: Result<UserToken, status::Custom<Json<ResponseMessage>>>,
+) -> Result<status::Custom<Json<Value>>, status::Custom<Json<ResponseMessage>>> {
     if let Err(e) = token {
-        return e;
+        return Err(e);
     }
 
     let connection: &mut PgConnection = &mut establish_connection();
 
-    let result_think: Result<Vec<Think>, ResponseError> = get_archive_think(uid_user, connection);
-    response_api_data(result_think)
+    let result_think: Result<ResponseValue<Vec<Think>>, ResponseMessage> =
+        get_archive_think(token.unwrap().sub, connection);
+
+    Ok(response_value_api(result_think))
 }
 
-#[post("/<uid_user>/profile", format = "application/json", data = "<payload>")]
-pub fn save_profile(
-    token: Result<UserToken, status::Custom<Json<Response>>>,
-    uid_user: Uuid,
+#[post("/profile", format = "application/json", data = "<payload>")]
+pub fn saving_profile(
+    token: Result<UserToken, status::Custom<Json<ResponseMessage>>>,
     payload: Validated<Json<NewProfileUserDTO>>,
-) -> status::Custom<Json<Response>> {
+) -> status::Custom<Json<ResponseMessage>> {
     if let Err(e) = token {
         return e;
     }
 
     let connection: &mut PgConnection = &mut establish_connection();
 
-    let action: Result<ResponseSuccess, ResponseError> =
-        create_profile(uid_user, payload.into_inner().into_inner(), connection);
-    response_api(action)
+    let action: ResponseMessage = create_profile(
+        token.unwrap().sub,
+        payload.into_inner().into_inner(),
+        connection,
+    );
+
+    response_message_api(action)
 }
 
-#[put("/<uid_user>", format = "application/json", data = "<payload>")]
+#[put("/account", format = "application/json", data = "<payload>")]
 pub fn updating_user(
-    token: Result<UserToken, status::Custom<Json<Response>>>,
-    uid_user: Uuid,
+    token: Result<UserToken, status::Custom<Json<ResponseMessage>>>,
     payload: Validated<Json<UpdateUserDTO>>,
-) -> status::Custom<Json<Response>> {
+) -> status::Custom<Json<ResponseMessage>> {
     if let Err(e) = token {
         return e;
     }
 
     let connection: &mut PgConnection = &mut establish_connection();
 
-    let action: Result<ResponseSuccess, ResponseError> =
-        update_user(uid_user, payload.into_inner().into_inner(), connection);
-    response_api(action)
+    let action: ResponseMessage = update_user(
+        token.unwrap().sub,
+        payload.into_inner().into_inner(),
+        connection,
+    );
+
+    response_message_api(action)
 }
 
-#[put("/<uid_user>/profile", format = "application/json", data = "<payload>")]
-pub fn update_profile_user(
-    token: Result<UserToken, status::Custom<Json<Response>>>,
-    uid_user: Uuid,
+#[put("/profile", format = "application/json", data = "<payload>")]
+pub fn updating_profile_user(
+    token: Result<UserToken, status::Custom<Json<ResponseMessage>>>,
     payload: Validated<Json<UpdateProfileUserDTO>>,
-) -> status::Custom<Json<Response>> {
+) -> status::Custom<Json<ResponseMessage>> {
     if let Err(e) = token {
         return e;
     }
 
     let connection: &mut PgConnection = &mut establish_connection();
 
-    let action: Result<ResponseSuccess, ResponseError> =
-        update_profile(uid_user, payload.into_inner().into_inner(), connection);
-    response_api(action)
+    let action: ResponseMessage = update_profile(
+        token.unwrap().sub,
+        payload.into_inner().into_inner(),
+        connection,
+    );
+
+    response_message_api(action)
 }
 
-#[put(
-    "/<uid_user>/password",
-    format = "application/json",
-    data = "<payload>"
-)]
-pub fn update_password_user(
-    token: Result<UserToken, status::Custom<Json<Response>>>,
-    uid_user: Uuid,
+#[put("/password", format = "application/json", data = "<payload>")]
+pub fn updating_password_user(
+    token: Result<UserToken, status::Custom<Json<ResponseMessage>>>,
     payload: Validated<Json<UpdatePasswordDTO>>,
-) -> status::Custom<Json<Response>> {
+) -> status::Custom<Json<ResponseMessage>> {
     if let Err(e) = token {
         return e;
     }
 
     let connection: &mut PgConnection = &mut establish_connection();
 
-    let action: Result<ResponseSuccess, ResponseError> =
-        update_password(uid_user, payload.into_inner().into_inner(), connection);
-    response_api(action)
+    let action: ResponseMessage = update_password(
+        token.unwrap().sub,
+        payload.into_inner().into_inner(),
+        connection,
+    );
+    response_message_api(action)
 }
 
-#[delete("/<uid_user>")]
+#[delete("/")]
 pub fn delete_account(
-    token: Result<UserToken, status::Custom<Json<Response>>>,
-    uid_user: Uuid,
-) -> status::Custom<Json<Response>> {
+    token: Result<UserToken, status::Custom<Json<ResponseMessage>>>,
+) -> status::Custom<Json<ResponseMessage>> {
     if let Err(e) = token {
         return e;
     }
 
     let connection: &mut PgConnection = &mut establish_connection();
 
-    let action: Result<ResponseSuccess, ResponseError> =
-        delete_user_with_profile(uid_user, connection);
-    response_api(action)
+    let action: ResponseMessage = delete_user_with_profile(token.unwrap().sub, connection);
+    response_message_api(action)
 }

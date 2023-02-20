@@ -1,22 +1,28 @@
 use align_mind_server::models::color_model::*;
-use align_mind_server::models::response_model::{ResponseError, ResponseSuccess};
+use align_mind_server::models::response_model::{ResponseMessage, ResponseValue};
 use align_mind_server::models::user_model::User;
 use align_mind_server::schema::colors;
 
 use chrono::Utc;
 use diesel::prelude::*;
-use diesel::result::Error;
 use rocket::http::Status;
 use uuid::Uuid;
 
-use super::users_service::get_user;
+use super::users_service::get_user_account;
 
-pub fn get_color(uuid_color: Uuid, conn: &mut PgConnection) -> Result<Color, ResponseError> {
+pub fn get_color(
+    uuid_color: Uuid,
+    conn: &mut PgConnection,
+) -> Result<ResponseValue<Color>, ResponseMessage> {
     colors::table
         .filter(colors::color_id.eq(uuid_color))
         .first::<Color>(conn)
-        .map_err(|_| ResponseError {
-            code: Status::NotFound.code,
+        .map(|color| ResponseValue {
+            code: Status::Accepted.code,
+            value: color,
+        })
+        .map_err(|_| ResponseMessage {
+            code: Some(Status::NotFound.code),
             message: "The color not found".to_string(),
         })
 }
@@ -24,46 +30,51 @@ pub fn get_color(uuid_color: Uuid, conn: &mut PgConnection) -> Result<Color, Res
 pub fn get_colors_with_user_uuid(
     uuid_user: Uuid,
     conn: &mut PgConnection,
-) -> Result<Vec<Color>, ResponseError> {
-    let result_user: User = get_user(uuid_user, conn)?;
+) -> Result<ResponseValue<Vec<Color>>, ResponseMessage> {
+    let result_user: User = get_user_account(uuid_user, conn)?.value;
 
-    let result_colors: Result<Vec<Color>, Error> =
-        Color::belonging_to(&result_user).load::<Color>(conn);
-
-    if result_colors.is_err() {
-        return Err(ResponseError {
-            code: Status::BadRequest.code,
+    Color::belonging_to(&result_user)
+        .load::<Color>(conn)
+        .map(|color| ResponseValue {
+            code: Status::Accepted.code,
+            value: color,
+        })
+        .map_err(|_| ResponseMessage {
+            code: Some(Status::BadRequest.code),
             message: "Unknown error".to_string(),
-        });
-    }
-
-    Ok(result_colors.unwrap())
+        })
 }
 
 pub fn get_color_by_code_and_user(
     uuid_user: Uuid,
     code: String,
     conn: &mut PgConnection,
-) -> Result<Color, ResponseError> {
+) -> Result<ResponseValue<Color>, ResponseMessage> {
     colors::table
         .filter(colors::user_id.eq(uuid_user))
         .filter(colors::code_color.eq(code))
         .first::<Color>(conn)
-        .map_err(|_| ResponseError {
-            code: Status::NotFound.code,
+        .map(|color| ResponseValue {
+            code: Status::Accepted.code,
+            value: color,
+        })
+        .map_err(|_| ResponseMessage {
+            code: Some(Status::NotFound.code),
             message: "The color not found".to_string(),
         })
 }
 
 pub fn create_color(
-    user_uuid: Uuid,
+    uuid_user: Uuid,
     payload: NewColorDTO,
     conn: &mut PgConnection,
-) -> Result<ResponseSuccess, ResponseError> {
-    get_user(user_uuid, conn)?;
+) -> ResponseMessage {
+    if let Err(e) = get_user_account(uuid_user, conn) {
+        return e;
+    }
 
     let color: NewColor = NewColor {
-        user_id: user_uuid,
+        user_id: uuid_user,
         code_color: payload.code_color.unwrap(),
     };
 
@@ -73,65 +84,74 @@ pub fn create_color(
         .is_ok();
 
     if !insert_action {
-        return Err(ResponseError {
-            code: Status::BadRequest.code,
+        return ResponseMessage {
+            code: Some(Status::BadRequest.code),
             message: "Unknow error".to_string(),
-        });
+        };
     }
 
-    Ok(ResponseSuccess {
+    ResponseMessage {
+        code: Some(Status::Accepted.code),
         message: "The color had been created".to_string(),
-        data: serde_json::to_value("").unwrap(),
-    })
+    }
 }
 
 pub fn update_color(
     uuid_color: Uuid,
     payload: UpdateColorDTO,
     conn: &mut PgConnection,
-) -> Result<ResponseSuccess, ResponseError> {
-    let result_color: Color = get_color(uuid_color, conn)?;
+) -> ResponseMessage {
+    let result_color: Result<ResponseValue<Color>, ResponseMessage> = get_color(uuid_color, conn);
+
+    if let Err(e) = result_color {
+        return e;
+    }
 
     let data_color: UpdateColor = UpdateColor {
         code_color: payload.code_color,
         updated_at: Some(Utc::now().naive_utc()),
     };
 
-    let update_action: bool = diesel::update(&result_color)
+    let color: Color = result_color.unwrap().value;
+
+    let update_action: bool = diesel::update(&color)
         .set(&data_color)
         .execute(conn)
         .is_ok();
 
     if !update_action {
-        return Err(ResponseError {
-            code: Status::BadRequest.code,
+        return ResponseMessage {
+            code: Some(Status::BadRequest.code),
             message: "Unknown Error".to_string(),
-        });
+        };
     }
 
-    Ok(ResponseSuccess {
+    ResponseMessage {
+        code: Some(Status::Ok.code),
         message: "The color has been updated".to_string(),
-        data: serde_json::to_value("").unwrap(),
-    })
+    }
 }
 
-pub fn delete_color(
-    uuid_color: Uuid,
-    conn: &mut PgConnection,
-) -> Result<ResponseSuccess, ResponseError> {
-    let result_color: Color = get_color(uuid_color, conn)?;
+pub fn delete_color(uuid_color: Uuid, conn: &mut PgConnection) -> ResponseMessage {
+    let result_color: Result<ResponseValue<Color>, ResponseMessage> = get_color(uuid_color, conn);
 
-    let delete_action: bool = diesel::delete(&result_color).execute(conn).is_ok();
-
-    if !delete_action {
-        return Err(ResponseError {
-            code: Status::BadRequest.code,
-            message: "The think hadn't been deleted".to_string(),
-        });
+    if let Err(e) = result_color {
+        return e;
     }
 
-    Ok(ResponseSuccess {
-        message: "The think had been deleted".to_string(),
-        data: serde_json::to_value("").unwrap(),
-    })
+    let color: Color = result_color.unwrap().value;
+
+    let delete_action: bool = diesel::delete(&color).execute(conn).is_ok();
+
+    if !delete_action {
+        return ResponseMessage {
+            code: Some(Status::BadRequest.code),
+            message: "The color hadn't been deleted".to_string(),
+        };
+    }
+
+    ResponseMessage {
+        code: Some(Status::Ok.code),
+        message: "The color had been deleted".to_string(),
+    }
 }

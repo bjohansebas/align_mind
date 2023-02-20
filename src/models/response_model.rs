@@ -1,20 +1,14 @@
-use rocket::serde::{Deserialize, Serialize};
-use serde_json::Value;
+use rocket::serde::Serialize;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Response {
+#[derive(Debug, Serialize)]
+pub struct ResponseMessage {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub code: Option<u16>,
     pub message: String,
-    pub data: Value,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ResponseSuccess {
-    pub message: String,
-    pub data: Value,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ResponseError {
+#[derive(Debug)]
+pub struct ResponseValue<T: Serialize> {
     pub code: u16,
-    pub message: String,
+    pub value: T,
 }
